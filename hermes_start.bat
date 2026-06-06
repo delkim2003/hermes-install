@@ -19,7 +19,7 @@ set "PROVIDER=openrouter"                     :: AI provider: openrouter, anthro
                                              ::   Private: deepseek ($1.28/month), Free: local-model + ollama
 set "MODEL=anthropic/claude-sonnet-4"         :: AI model name
 
-set "DUMP_DIR=%REPO_ROOT%backups"              :: Directory for MySQL backups (relative to REPO_ROOT)
+set "DUMP_DIR=backups"                          :: Directory for MySQL backups (relative to REPO_ROOT)
 :: ============================================
 
 :: Internal variables - do not edit
@@ -172,11 +172,11 @@ docker exec ^
 
 :: Create SQL dump
 echo    Creating MySQL dump...
-mkdir "%DUMP_DIR%" 2>nul
+mkdir "%REPO_ROOT%%DUMP_DIR%" 2>nul
 docker exec %NAME%-mysql ^
     mysqldump -uroot -p%MPASS% --databases hermes ^
-    --routines --triggers --single-transaction > "%DUMP_DIR%\hermes_dump.sql"
-echo    Dump saved: %DUMP_DIR%\hermes_dump.sql
+    --routines --triggers --single-transaction > "%REPO_ROOT%%DUMP_DIR%\\hermes_dump.sql"
+echo    Dump saved: %REPO_ROOT%%DUMP_DIR%\\hermes_dump.sql
 echo.
 goto end_sync
 
@@ -191,9 +191,8 @@ echo ======================================
 echo.
 echo    Hermes API      : http://localhost:8642
 echo    Hermes Dashboard: http://localhost:9119
-echo    (Open WebUI entfernt)
 echo    MySQL           : %NAME%-mysql:3306
-echo    MySQL Dump      : %DUMP_DIR%\hermes_dump.sql
+echo    MySQL Dump      : %REPO_ROOT%%DUMP_DIR%\\hermes_dump.sql
 echo.
 echo    Running containers:
 docker ps --filter network=hermes-net --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"

@@ -29,9 +29,9 @@ Befolge die Schritte in der angegebenen Reihenfolge – jeder baut auf dem vorhe
 - [Phase 5: Überprüfung](#phase-5-ueberpruefung)
 - [Phase 6: Täglicher Betrieb](#phase-6-taeglicher-betrieb)
 - [Phase 7: Fehlerbehebung](#phase-7-fehlerbehebung)
-- [Phase 8: Notfall-Wiederherstellung](#phase-8-notfall-wiederherstellung)
-
 ---
+
+
 
 ## Phase 1: Voraussetzungen
 
@@ -456,18 +456,6 @@ Das passiert, wenn pip `hermes-agent` nicht installieren konnte. Versuche:
 ```powershell
 docker build --no-cache -t hermes-agent:latest .
 ```
-
----
-
-## Phase 8: Notfall-Wiederherstellung
-
-Im Falle eines Totalausfalls (neuer PC, Festplatten-Defekt, komplette Neuinstallation):
-
-1. **Diese Anleitung befolgen (Phasen 1–4)** – WSL, Docker, Repository, Image
-2. **MySQL-Dump einspielen** – siehe [RECOVERY.md](RECOVERY.md) Schritt 4B
-3. **Reverse Sync ausführen** – siehe [RECOVERY.md](RECOVERY.md) Schritt 6
-
-Die vollständige Wiederherstellungsanleitung findest du in der separaten Datei `RECOVERY.md`.
 
 ---
 

@@ -75,9 +75,9 @@ Gesamtzeit: ~90 Sekunden. Keine manuellen Schritte.
 
 | Komponente | Beschreibung |
 |------------|--------------|
-|| Hermes API Server | Kern-KI-Agent, OpenAI-kompatible API auf Port 8642 |
-|| Hermes Dashboard | Webbasiertes Dashboard zur Uberwachung auf Port 9119 |
-|| MySQL 8.0 | Permanente Speicherung von Sessions und Memory |
+| Hermes API Server | Kern-KI-Agent, OpenAI-kompatible API auf Port 8642 |
+| Hermes Dashboard | Webbasiertes Dashboard zur Uberwachung auf Port 9119 |
+| MySQL 8.0 | Permanente Speicherung von Sessions und Memory |
 | Automatischer Dump | `mysqldump` erstellt bei jedem Start ein vollstandiges Backup |
 | Sub-Agent Support | Hermes kann autonome Unter-Agenten fur parallele Arbeit starten |
 | Recovery Ready | Reverse-Sync stellt alles aus einem einzigen SQL-Dump wieder her |
@@ -132,7 +132,7 @@ state.db (SQLite)  ----sync---->  MySQL 8.0  ----dump---->  backups\hermes_dump.
    hieraus)                                                     versionieren)
 ```
 
-**Bei einem Totalausfall:** SQL-Dump in MySQL einspielen, Reverse-Sync ausfuhren, und dein Hermes steht mit allen Sessions und dem gesamten Memory wieder da. Siehe [RECOVERY.md](RECOVERY.md) (EN) oder [INSTALLATION.de.md](INSTALLATION.de.md) (DE).
+**Bei einem Totalausfall:** SQL-Dump in MySQL einspielen, Reverse-Sync ausfuhren, und dein Hermes steht mit allen Sessions und dem gesamten Memory wieder da. Siehe [RECOVERY.md](RECOVERY.md) (EN) oder [RECOVERY.de.md](RECOVERY.de.md) (DE).
 
 ---
 

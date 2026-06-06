@@ -75,9 +75,9 @@ Total time: ~90 seconds. No manual steps.
 
 | Component | Description |
 |-----------|-------------|
-|| Hermes API Server | Core AI agent, OpenAI-compatible API on port 8642 |
-|| Hermes Dashboard | Web-based dashboard for monitoring at port 9119 |
-|| MySQL 8.0 | Persistent session and memory storage |
+| Hermes API Server | Core AI agent, OpenAI-compatible API on port 8642 |
+| Hermes Dashboard | Web-based dashboard for monitoring at port 9119 |
+| MySQL 8.0 | Persistent session and memory storage |
 | Automated Dump | `mysqldump` creates a full backup on every start |
 | Sub-agent Support | Hermes can spawn autonomous sub-agents for parallel work |
 | Recovery Ready | Reverse-sync restores everything from a single SQL dump |
