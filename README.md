@@ -1,4 +1,4 @@
-# 🤖 Hermes Agent Deployment Kit
+# Hermes Agent Deployment Kit
 
 <p align="center">
   <img src="https://einfach-online.dev/logo.png" alt="Einfach Online Logo" width="200"/>
@@ -19,240 +19,165 @@
 
 ---
 
-## 🚀 Overview
+## Overview
 
-**Hermes Agent Deployment Kit** is a production-ready, **zero-configuration deployment system** for [Hermes Agent](https://hermes-agent.nousresearch.com) by Nous Research — the autonomous AI agent for developers.
+**Hermes Agent Deployment Kit** is a production-ready, zero-configuration deployment system for [Hermes Agent](https://hermes-agent.nousresearch.com) by Nous Research -- the autonomous AI agent for developers.
 
 Everything runs **locally in Docker**. No cloud dependency. No data leaves your machine.
 
-> **Built by [Philipp Schlemmer](https://einfach-online.dev) at einfach-online.dev — an Austrian web agency specializing in DSGVO-compliant, local-first infrastructure.**
+> Built by [einfach-online.dev](https://einfach-online.dev) -- an Austrian web agency specializing in DSGVO-compliant, local-first infrastructure.
 
 ---
 
-## 🏗 Architecture
+## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                                                                     │
-│   ┌──────────────┐    ┌──────────────┐    ┌──────────────────────┐  │
-│   │   Hermes     │    │  Hermes      │    │    Open WebUI        │  │
-│   │   API Server │    │  Dashboard   │    │    Chat Interface    │  │
-│   │   :8642      │    │  :9119       │    │    :3000             │  │
-│   └──────┬───────┘    └──────┬───────┘    └──────────┬───────────┘  │
-│          │                  │                        │              │
-│          └──────────────────┼────────────────────────┘              │
-│                             │                                      │
-│                    ┌────────▼────────┐                              │
-│                    │  Docker Network │                              │
-│                    │   hermes-net    │                              │
-│                    └────────┬────────┘                              │
-│                             │                                      │
-│                    ┌────────▼────────┐     ┌────────────────────┐   │
-│                    │   MySQL 8.0     │────▶│   MySQL Dump       │   │
-│                    │   Backup/       │     │   hermes_dump.sql  │   │
-│                    │   Restore       │     │   (auto-updated)   │   │
-│                    └────────┬────────┘     └────────────────────┘   │
-│                             │                                      │
-│                    ┌────────▼──────────────────────┐                │
-│                    │  state.db (SQLite ↔ MySQL)    │                │
-│                    │  Synchronized on every start  │                │
-│                    └───────────────────────────────┘                │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+  +------------------+    +------------------+    +--------------------+
+  |   Hermes         |    |  Hermes          |    |    Open WebUI      |
+  |   API Server     |    |  Dashboard       |    |    Chat Interface  |
+  |   :8642          |    |  :9119           |    |    :3000           |
+  +--------+---------+    +--------+---------+    +---------+----------+
+           |                       |                         |
+           +-----------------------+-------+-----------------+
+                                           |
+                                   +-------+--------+
+                                   |    MySQL 8.0   |
+                                   |  state backup  |
+                                   +----------------+
+                                           |
+                                   +-------+--------+
+                                   |  mysqldump     |
+                                   |  hermes_dump.sql|
+                                   +----------------+
 ```
 
 ---
 
-## ✨ Features
+## Features
 
-| Feature | Description | Why It Matters |
-|---------|-------------|----------------|
-| **🎯 Zero Configuration** | Edit 5 variables in a single batch file, double-click, done | No YAML fiddling, no scripting |
-| **💾 MySQL Auto-Backup** | Every start: syncs state.db → MySQL → creates `hermes_dump.sql` | Never lose a conversation |
-| **🔄 Reverse Sync** | Restore `state.db` from MySQL dump after disaster | Full disaster recovery in 5 commands |
-| **🌐 Open WebUI** | Beautiful ChatGPT-style interface at `http://localhost:3000` | Familiar chat experience |
-| **📊 Hermes Dashboard** | Monitor agent status at `http://localhost:9119` | Real-time system overview |
-| **🔒 Local First** | No cloud, no telemetry, no third-party storage | Your data = your property |
-| **🔌 Any AI Provider** | OpenRouter, Anthropic, OpenAI, DeepSeek, or custom | Freedom of choice |
-| **📁 Drive Mounting** | Mount project folders into containers | Work directly on your code |
-| **🔐 Privacy by Design** | No cookies, no CDNs, no external trackers | DSGVO/GDPR compliant architecture |
+| Component | Description |
+|-----------|-------------|
+| Hermes API Server | Core AI agent, OpenAI-compatible API on port 8642 |
+| Hermes Dashboard | Web UI for agent management on port 9119 |
+| Open WebUI | ChatGPT-style interface on port 3000 |
+| MySQL 8.0 | Persistent session and memory backup |
+| Automated dump | Cron-fresh mysqldump to disk on every start |
+| Recovery-ready | Full disaster recovery from a single SQL file |
 
 ---
 
-## 📋 Requirements
+## Requirements
 
-| Requirement | Minimum | Recommended | Notes |
-|-------------|---------|-------------|-------|
-| **OS** | Windows 10 Pro 22H2 | Windows 11 Pro | WSL 2 required |
-| **RAM** | 16 GB | 32 GB | More RAM = faster AI responses |
-| **CPU** | 4 cores, virtualization enabled | 8+ cores | Intel VT-x or AMD-V |
-| **Disk** | 50 GB free | 100+ GB SSD | Docker images ~2 GB |
-| **Docker** | Desktop 4.x | Latest | WSL 2 backend |
-| **WSL** | Ubuntu 22.04 | Ubuntu 24.04 | Default distribution |
+| Requirement | Version / Details |
+|-------------|-------------------|
+| Windows 10/11 | Pro or Home with WSL2 |
+| WSL 2 | Ubuntu 22.04 or later |
+| Docker Desktop | 4.x or later, WSL2 backend |
+| Git | Any recent version |
+| Disk space | 5 GB free (Docker images + data) |
 
 ---
 
-## ⚡ Quick Start
+## Quick Start
 
 ```powershell
-# 1. Install prerequisites (Docker Desktop + WSL 2)
-#    See INSTALLATION.md for detailed steps
+# 1. Clone the repository
+cd D:\
+git clone https://github.com/delkim2003/hermes-install.git hermes
+cd hermes
 
-# 2. Clone this repository (any drive: C:, D:, USB — works everywhere)
-git clone https://github.com/delkim2003/hermes-install.git C:\hermes
-
-# 3. Edit just 5 variables in the batch file
-notepad C:\hermes\hermes_start.bat
-#   → Set: API_KEY, MPASS, PROVIDER, MODEL, WEBUI_NAME
-
-# 4. Build the Docker image (one-time, ~10 minutes)
-cd C:\hermes
+# 2. Build the Hermes Docker image
 docker build -t hermes-agent:latest .
 
-# 5. Launch everything
-C:\hermes\hermes_start.bat
+# 3. Edit configuration
+notepad hermes_start.bat
 ```
 
-**Open your browser to [http://localhost:3000](http://localhost:3000)** and start chatting with your autonomous AI agent. That's it.
+In the batch file, set these variables:
 
----
+| Variable | Example | Description |
+|----------|---------|-------------|
+| `PROVIDER` | `openrouter` | Your AI provider name |
+| `MODEL` | `anthropic/claude-sonnet-4` | Model name from your provider |
+| `API_KEY` | `sk-...` | Your provider API key |
+| `MPASS` | `my_secure_password` | MySQL root password |
 
-## 📦 What's Inside
-
-| File | Purpose | Must Edit? |
-|------|---------|-----------|
-| `hermes_start.bat` | One-click launcher — deploys all 4 containers | ✅ Yes (5 variables) |
-| `Dockerfile` | Builds the Hermes Agent container image | ❌ No |
-| `mysql_sync.py` | Synchronizes state.db ↔ MySQL (bidirectional) | ❌ No |
-| `INSTALLATION.md` | Step-by-step guide (30–45 min first setup) | — Read once |
-| `RECOVERY.md` | Complete disaster recovery procedure | — Print & file |
-| `.gitignore` | Keeps secrets and databases out of Git | ❌ No |
-
----
-
-## 💽 Backup Strategy
-
-```
-  Every system start (automatic):
-
-     state.db  ──sync──▶  MySQL  ──dump──▶  hermes_dump.sql
-        (SQLite)        (Container)        (On your drive)
-
-  Disaster recovery (manual):
-
-     hermes_dump.sql  ──restore──▶  MySQL  ──reverse-sync──▶  state.db
+```powershell
+# 4. Run
+hermes_start.bat
 ```
 
-| What | When | Where | How |
-|------|------|-------|-----|
-| **MySQL dump** | Every batch start (automatic) | `%DUMP_DIR%\hermes_dump.sql` | Contains ALL sessions, messages, memory |
-| **Hermes config** | On changes | `%USERPROFILE%\.hermes\config.yaml` | Manual backup |
-| **Docker volumes** | Every few months | `docker volume inspect hermes_mysql_data` | Manual backup |
-
-> 💡 **Copy `%DUMP_DIR%\hermes_dump.sql` to a USB drive regularly.** This single file contains your entire Hermes brain — conversations, agent sessions, and memory. Everything else can be rebuilt from this repository.
+That's it. After a few minutes you have:
+- Hermes API at http://localhost:8642
+- Hermes Dashboard at http://localhost:9119
+- Open WebUI at http://localhost:3000
+- Automated MySQL backup at `backups\hermes_dump.sql`
 
 ---
 
-## 🔒 Security Philosophy
+## Backup Strategy
 
-| Principle | Implementation |
-|-----------|---------------|
-| **No cloud dependency** | Everything runs in Docker on your local machine |
-| **No data exfiltration** | AI queries go directly to your chosen provider (OpenRouter, etc.) |
-| **No telemetry** | Zero tracking, zero analytics, zero cookies |
-| **No tunnel** | No Cloudflare, no ngrok — no remote access points (by design) |
-| **Encrypted at rest** | MySQL volume + optional Cryptomator vault support |
-| **API authentication** | Hermes ↔ Open WebUI secured with your own API key |
+The backup pipeline runs automatically on every start:
 
-Designed for **DSGVO/GDPR-compliant deployments** where data sovereignty is non-negotiable.
+```
+state.db (SQLite)  ----sync---->  MySQL 8.0  ----dump---->  backups\hermes_dump.sql
+     |                                                              |
+  live data                                                   recovery file
+  (Hermes reads                                               (keep safe,
+   from here)                                                  version it)
+```
 
----
-
-## 🛡 Security Checklist
-
-- [ ] API key is a strong, unique password
-- [ ] MySQL password is different from API key
-- [ ] No secrets committed to Git (`.gitignore` handles this)
-- [ ] No cloud tunnels or remote access enabled
-- [ ] Provider API key stored as Windows environment variable (not in batch file)
-- [ ] External backup of `hermes_dump.sql` configured
+**On disaster:** restore the SQL dump into MySQL, run the reverse sync, and your Hermes is back with all sessions and memory intact. See [RECOVERY.md](RECOVERY.md).
 
 ---
 
-## 🧰 Tools & Integrations
+## Security
 
-Hermes Agent comes with built-in tools that Just Work:
-
-| Tool | Purpose | Available |
-|------|---------|-----------|
-| `terminal` | Run shell commands | ✅ |
-| `web_search` | Search the internet | ✅ |
-| `file` | Read/write files | ✅ |
-| `browser` | Navigate web pages | ✅ |
-| `vision` | Analyze images | ✅ |
-| `memory` | Persistent cross-session memory | ✅ |
-| `skills` | Reusable task workflows | ✅ |
-| `cronjob` | Scheduled tasks | ✅ |
+- All data stays local -- no cloud, no third-party API calls for storage
+- No telemetry, no tracking, no phone-home
+- MySQL runs on an internal Docker network, not exposed to the host
+- API key is set as environment variable, never hardcoded in scripts
+- WSL2 provides hardware-level isolation between Windows and the container runtime
 
 ---
 
-## ❓ Frequently Asked Questions
+## FAQ
 
-**Q: Can I run this on a different drive?**  
-A: Yes. Clone the repo to C:\, D:\, USB drive, or network drive. The batch file auto-detects its own location.
+**Q: Do I need a GPU?**
+A: No. Hermes connects to remote AI providers (OpenRouter, DeepSeek, etc.). You only need an internet connection for the API calls.
 
-**Q: Do I need an internet connection?**  
-A: Only for the initial build (Docker images + PyPI packages) and for AI queries. After setup, Docker runs fully offline.
+**Q: Can I run this on a laptop?**
+A: Yes. Hermes itself uses minimal resources (~200 MB RAM). MySQL adds another ~200 MB. Any modern laptop handles it easily.
 
-**Q: How do I update Hermes Agent?**  
-A: Re-run `docker build --no-cache -t hermes-agent:latest .` in the repo directory. The batch file uses the latest built image.
+**Q: What if my provider goes down?**
+A: Change the `PROVIDER` and `MODEL` variables and restart. Your MySQL backup is provider-independent.
 
-**Q: Can I use multiple AI providers?**  
-A: Yes. Change `PROVIDER` and `MODEL` in the batch file, also set the corresponding API key as a Windows environment variable. Restart the API server with `docker restart hermes-agent`.
+**Q: Does this work with Linux natively?**
+A: The deployment kit is designed for Windows + WSL2 + Docker Desktop. For native Linux, you'd adapt the Docker Compose approach.
 
-**Q: How do I access my old chat sessions after recovery?**  
-A: The reverse sync (Step 6 in RECOVERY.md) restores all sessions and messages into `state.db`. Open WebUI will show them in the sidebar.
+**Q: How do I update Hermes?**
+A: Rebuild the Docker image: `docker build --no-cache -t hermes-agent:latest .` then restart.
 
----
-
-## 📚 Documentation
-
-| Document | Language | Content |
-|----------|----------|---------|
-| [INSTALLATION.md](INSTALLATION.md) | 🇬🇧 English | Step-by-step setup guide |
-| [INSTALLATION.de.md](INSTALLATION.de.md) | 🇩🇪 German | Vollständige Installationsanleitung |
-| [RECOVERY.md](RECOVERY.md) | 🇬🇧 English | Disaster recovery procedure |
-| [README.de.md](README.de.md) | 🇩🇪 German | Diese Seite auf Deutsch |
+**Q: Can I run multiple instances?**
+A: Yes. Clone the repo to a second directory, change port mappings in the batch file, and run independently.
 
 ---
 
-## 📞 Support
+## Documentation
 
-Built with ❤️ by **Philipp Schlemmer**
-
-| Contact | Details |
-|---------|---------|
-| **Agency** | [einfach-online.dev](https://einfach-online.dev) |
-| **Email** | info@einfach-online.dev |
-| **Phone** | +43 664 2550 779 |
-| **Location** | Austria (EU) |
-| **Expertise** | DSGVO-compliant web infrastructure, AI deployment, Local First architecture |
-
-Need a custom deployment or enterprise support? [Get in touch](mailto:info@einfach-online.dev).
+| Language | File | Content |
+|----------|------|---------|
+| [EN] | [INSTALLATION.md](INSTALLATION.md) | Full installation guide from blank Windows |
+| [EN] | [RECOVERY.md](RECOVERY.md) | Disaster recovery instructions |
+| [DE] | [INSTALLATION.de.md](INSTALLATION.de.md) | Vollstandige Installationsanleitung auf Deutsch |
+| [DE] | [README.de.md](README.de.md) | Deutsche Version dieser README |
 
 ---
 
-## 📄 License
+## License
 
-[Apache 2.0](https://github.com/nousresearch/hermes-agent/blob/main/LICENSE)
-
-Built on top of [Hermes Agent](https://github.com/nousresearch/hermes-agent) by Nous Research.  
-Deployment system, documentation, and automation by [einfach-online.dev](https://einfach-online.dev).
+Apache 2.0 -- free to use, modify, and distribute.
 
 ---
 
-<p align="center">
-  <sub>Local First. Performance Driven. Privacy Centric.</sub>
-  <br/>
-  <sub>© 2024–2025 einfach-online.dev | Philipp Schlemmer | All rights reserved.</sub>
-</p>
+Built with care by [einfach-online.dev](https://einfach-online.de) -- Local First. Performance Driven. Privacy Centric.
