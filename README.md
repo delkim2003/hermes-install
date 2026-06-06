@@ -139,13 +139,44 @@ state.db (SQLite)  ----sync---->  MySQL 8.0  ----dump---->  backups\hermes_dump.
 
 ---
 
-## Security
+## Privacy & Data Protection
 
-- All data stays local -- no cloud, no third-party API calls for storage
-- No telemetry, no tracking, no phone-home
-- MySQL runs on an internal Docker network, not exposed to the host
-- API key is set as environment variable, never hardcoded in scripts
-- WSL2 provides hardware-level isolation between Windows and the container runtime
+**Your data stays under your control.** This kit is designed Privacy by Design (Art. 25 GDPR).
+
+### What stays local
+
+| Component | Data residency |
+|-----------|:--------------|
+| Hermes Agent | ✅ Local runtime on your machine |
+| Chat history & memory | ✅ Local SQLite + MySQL |
+| MySQL backups | ✅ Written to your local disk |
+| Configuration | ✅ Local files, no cloud sync |
+| **Your prompts (to LLM)** | ⚠️ Sent to your chosen provider |
+
+Only your conversation text leaves the machine — no metadata, no logs, no database dumps. See [PRIVACY.md](PRIVACY.md) for full analysis.
+
+### Choose your privacy level
+
+| Option | Example | Data leaves EU? | GDPR compliant? | Monthly cost* |
+|--------|---------|:---------------:|:---------------:|:-------------:|
+| **Local model** | llama.cpp, ollama | ❌ Never | ✅ Yes | $0 (electricity) |
+| **EU provider** | [cortecs.ai](https://cortecs.ai) (Vienna, AT) | ❌ No | ✅ With DPA | ~$3.50 |
+| **Direct API** | DeepSeek (China) | ✅ Yes | ⚠️ User resp. | **$1.28** |
+| **Router (USA)** | OpenRouter | ✅ Yes | ❌ Grey zone | ~$3.50 |
+
+*\*At 100M tokens/month — actual usage varies.*
+
+> **Austrian businesses:** Use a local model or cortecs.ai (EU-hosted, DPA available).  \
+> **Private users:** DeepSeek direct costs as little as **$1.28/month** — 97 % less than equivalent GPT usage.
+
+### Built-in protections
+
+- **No telemetry** — Hermes Agent has no phone-home, no tracking, no analytics
+- **No cloud storage** — your files, your machine
+- **Docker isolation** — MySQL runs on an internal network, not exposed to host or internet
+- **Cryptomator support** — optional vault encryption before container start
+- **API key separation** — never hardcoded, set as environment variable
+- **WSL2 isolation** — hardware-level process separation
 
 ---
 
@@ -177,7 +208,10 @@ A: Yes. Clone the repo to a second directory, change port mappings in the batch 
 |----------|------|---------|
 | [EN] | [INSTALLATION.md](INSTALLATION.md) | Full installation guide from blank Windows |
 | [EN] | [RECOVERY.md](RECOVERY.md) | Disaster recovery instructions |
+| [EN] | [PRIVACY.md](PRIVACY.md) | Privacy, GDPR, provider choice analysis |
 | [DE] | [INSTALLATION.de.md](INSTALLATION.de.md) | Full installation guide in German |
+| [DE] | [RECOVERY.de.md](RECOVERY.de.md) | Disaster recovery in German |
+| [DE] | [PRIVACY.de.md](PRIVACY.de.md) | Privacy & DSGVO in German |
 | [DE] | [README.de.md](README.de.md) | This README in German |
 
 ---

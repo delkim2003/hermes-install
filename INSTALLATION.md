@@ -182,10 +182,79 @@ set "WEBUI_NAME=My Company - Hermes"            -> Your company/project name
 |----------|----------|-------------|
 | `API_KEY` | ✅ Yes | Any password. Used for API authentication between Hermes and Open WebUI. |
 | `MPASS` | ✅ Yes | MySQL root password. Used for the database container and backups. |
-| `PROVIDER` | ✅ Yes | AI provider: `openrouter`, `anthropic`, `openai`, `deepseek`, or `custom` |
-| `MODEL` | ✅ Yes | Model name: `anthropic/claude-sonnet-4`, `gpt-4o`, `deepseek-v4-flash`, etc. |
+| `PROVIDER` | ✅ Yes | AI provider. See [provider options below](#choosing-your-ai-provider). |
+| `MODEL` | ✅ Yes | Model name: `deepseek-v4-flash`, `anthropic/claude-sonnet-4`, `gpt-4o`, `local-model`, etc. |
 | `WEBUI_NAME` | ❌ No | Display name shown in Open WebUI (top-left corner). |
 | `DUMP_DIR` | ❌ No | Path for MySQL backup. Default: `<REPO_DIR>\\backups\\` |
+
+---
+
+---
+
+
+
+## Choosing Your AI Provider
+
+Your choice of AI provider determines your **cost, privacy, and GDPR compliance**. Hermes works with any OpenAI-compatible API. Here are the 4 options:
+
+### Option A: EU Provider (GDPR Compliant) — Recommended for businesses
+
+**cortecs.ai** (Vienna, Austria) hosts DeepSeek, Claude, GPT, and more in EU data centers. They provide a Data Processing Agreement (DPA / AVV) on request.
+
+```batch
+set "PROVIDER=openrouter"
+set "MODEL=deepseek/deepseek-v4-flash"
+set "CUSTOM_API_BASE=https://api.cortecs.ai/v1"
+```
+
+- Data stays in the EU   ✅
+- DPA / AVV available   ✅
+- Cost: ~$0.20 / $0.80 per 1M tokens
+
+### Option B: Local Model (100 % Private)
+
+Run a local LLM via llama.cpp or ollama. Zero data ever leaves your machine.
+
+```batch
+set "PROVIDER=custom"
+set "MODEL=local-model-name"
+set "CUSTOM_API_BASE=http://localhost:1234/v1"
+```
+
+- No data leaves your machine   ✅    ✅
+- No internet required   ✅
+- Cost: $0 (electricity only)
+
+### Option C: Direct DeepSeek (Budget Choice) — Cheapest
+
+Connect directly to DeepSeek's API. Extremely affordable.
+
+```batch
+set "PROVIDER=deepseek"
+set "MODEL=deepseek-v4-flash"
+```
+
+- Cost: **$0.10 / $0.20** per 1M tokens — **97 % cheaper than GPT-5.5**
+- Monthly cost at 100M tokens: **~$1.28**
+- Data processed in China — your decision
+- GDPRh4: Not compliant without additional measures
+
+### Option D: OpenRouter (Flexible)
+
+Route through OpenRouter to access 400+ models. Backend can be EU-hosted.
+
+```batch
+set "PROVIDER=openrouter"
+set "MODEL=deepseek/deepseek-v4-flash"
+```
+
+- Slightly higher cost (~$0.20 / $0.80)
+- Can select EU backends (DeepInfra, NovitaAI)
+- OpenRouter is US-based — grey zone under GDPR
+
+> **Full analysis with legal references:** [PRIVACY.md](PRIVACY.md)
+
+---
 
 **On first run, you also need to set your provider's API key:**
 

@@ -10,6 +10,8 @@ setlocal enabledelayedexpansion
 set "API_KEY=change-me-to-a-secure-password"  :: Free choice - used for API auth
 set "MPASS=change-me-mysql-password"          :: MySQL root password - free choice
 set "PROVIDER=openrouter"                     :: AI provider: openrouter, anthropic, openai, deepseek, custom
+                                             ::   EU/GDPR: use openrouter + set CUSTOM_API_BASE=https://api.cortecs.ai/v1
+                                             ::   Private: deepseek ($1.28/month), Free: local-model + ollama
 set "MODEL=anthropic/claude-sonnet-4"         :: AI model name
 set "WEBUI_NAME=My Company - Hermes"          :: Display name in Open WebUI
 set "DUMP_DIR=%REPO_ROOT%backups"              :: Directory for MySQL backups (relative to REPO_ROOT)

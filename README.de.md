@@ -139,13 +139,44 @@ state.db (SQLite)  ----sync---->  MySQL 8.0  ----dump---->  backups\hermes_dump.
 
 ---
 
-## Sicherheit
+## Datenschutz & DSGVO
 
-- Alle Daten bleiben lokal -- keine Cloud, keine Drittanbieter-API fur Storage
-- Kein Telemetrie, kein Tracking, kein Phone-Home
-- MySQL lauft im internen Docker-Netzwerk, nicht zum Host exponiert
-- API-Key wird als Umgebungsvariable gesetzt, niemals hartcodiert
-- WSL2 bietet hardwarenahe Isolierung zwischen Windows und Container-Laufzeit
+**Deine Daten bleiben unter deiner Kontrolle.** Dieses Kit wurde nach Privacy by Design (Art. 25 DSGVO) entwickelt.
+
+### Was bleibt lokal
+
+| Komponente | Datenverbleib |
+|-----------|:--------------|
+| Hermes Agent | ✅ Lokale Laufzeit auf deinem Rechner |
+| Chat-Verlauf & Memory | ✅ Lokales SQLite + MySQL |
+| MySQL-Backups | ✅ Auf deine lokale Festplatte geschrieben |
+| Konfiguration | ✅ Lokale Dateien, kein Cloud-Sync |
+| **Deine Prompts (zum LLM)** | ⚠️ Werden an den gewahlten Provider gesendet |
+
+Nur dein Gesprachstext verlasst den Rechner — keine Metadaten, keine Logs, keine Datenbank-Dumps. Siehe [PRIVACY.de.md](PRIVACY.de.md) fur die vollstandige Analyse.
+
+### Wahle dein Datenschutz-Niveau
+
+| Option | Beispiel | Daten verlassen EU? | DSGVO-konform? | Monatskosten* |
+|--------|---------|:------------------:|:--------------:|:-------------:|
+| **Lokales Modell** | llama.cpp, ollama | ❌ Nie | ✅ Ja | $0 (Strom) |
+| **EU-Provider** | [cortecs.ai](https://cortecs.ai) (Wien, AT) | ❌ Nein | ✅ Mit AVV | ~$3.50 |
+| **Direkt-API** | DeepSeek (China) | ✅ Ja | ⚠️ Eigenverantw. | **$1.28** |
+| **Router (USA)** | OpenRouter | ✅ Ja | ❌ Grauzone | ~$3.50 |
+
+*\*Bei 100M Tokens/Monat — tatsachliche Nutzung kann abweichen.*
+
+> **Osterreichische Unternehmen:** Nutze ein lokales Modell oder cortecs.ai (EU-gehostet, AVV verfugbar).  \
+> **Privatanwender:** DeepSeek direkt kostet nur **$1.28/Monat** — 97 % weniger als vergleichbare GPT-Nutzung.
+
+### Eingebaute Schutzmassnahmen
+
+- **Keine Telemetrie** — Hermes Agent hat kein Phone-Home, kein Tracking, keine Analyse
+- **Kein Cloud-Speicher** — deine Dateien, dein Rechner
+- **Docker-Isolation** — MySQL lauft im internen Netzwerk, nicht zum Host oder Internet exponiert
+- **Cryptomator-Support** — optionale Tresor-Verschlusselung vor Container-Start
+- **API-Key-Trennung** — niemals hartcodiert, als Umgebungsvariable gesetzt
+- **WSL2-Isolation** — hardwarenahe Prozess-Trennung
 
 ---
 
@@ -177,7 +208,10 @@ A: Ja. Repo in ein zweites Verzeichnis klonen, Ports in der Batch-Datei anpassen
 |---------|-------|--------|
 | [EN] | [INSTALLATION.md](INSTALLATION.md) | Vollstandige Installationsanleitung von blankem Windows |
 | [EN] | [RECOVERY.md](RECOVERY.md) | Notfall-Wiederherstellungs-Anleitung |
+| [EN] | [PRIVACY.md](PRIVACY.md) | Privacy, GDPR, provider choice analysis |
 | [DE] | [INSTALLATION.de.md](INSTALLATION.de.md) | Vollstandige Installationsanleitung auf Deutsch |
+| [DE] | [RECOVERY.de.md](RECOVERY.de.md) | Notfall-Wiederherstellung auf Deutsch |
+| [DE] | [PRIVACY.de.md](PRIVACY.de.md) | Datenschutz & DSGVO auf Deutsch |
 | [DE] | [README.de.md](README.de.md) | Deutsche Version dieser README |
 
 ---

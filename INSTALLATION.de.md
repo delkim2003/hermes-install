@@ -196,12 +196,81 @@ set "WEBUI_NAME=Meine Firma - Hermes"           -> Dein Firmen-/Projektname
 
 | Variable | Pflicht | Beschreibung |
 |----------|---------|-------------|
-| `API_KEY` | ✅ Ja | Beliebiges Passwort. Wird für API-Authentifizierung zwischen Hermes und Open WebUI verwendet. |
-| `MPASS` | ✅ Ja | MySQL Root-Passwort. Wird für den Datenbank-Container und Backups verwendet. |
-| `PROVIDER` | ✅ Ja | KI-Anbieter: `openrouter`, `anthropic`, `openai`, `deepseek` oder `custom` |
-| `MODEL` | ✅ Ja | Modellname: `anthropic/claude-sonnet-4`, `gpt-4o`, `deepseek-v4-flash`, etc. |
+| `API_KEY` | ✅ Ja | Beliebiges Passwort. Wird fur API-Authentifizierung zwischen Hermes und Open WebUI verwendet. |
+| `MPASS` | ✅ Ja | MySQL Root-Passwort. Wird fur den Datenbank-Container und Backups verwendet. |
+| `PROVIDER` | ✅ Ja | KI-Anbieter. Siehe [Provider-Wahl unten](#provider-wahl-und-datenschutz). |
+| `MODEL` | ✅ Ja | Modellname: `deepseek-v4-flash`, `anthropic/claude-sonnet-4`, `gpt-4o`, `local-model`, etc. |
 | `WEBUI_NAME` | ❌ Nein | Anzeigename in Open WebUI (oben links). |
-| `DUMP_DIR` | ❌ Nein | Pfad für MySQL-Backup. Standard: `<REPO_DIR>\backups\` |
+| `DUMP_DIR` | ❌ Nein | Pfad fur MySQL-Backup. Standard: `<REPO_DIR>\\backups\\` |
+
+---
+
+
+
+---
+
+## Provider-Wahl und Datenschutz
+
+Deine Wahl des KI-Providers bestimmt **Kosten, Datenschutz und DSGVO-Konformitat**. Hermes funktioniert mit jeder OpenAI-kompatiblen API. Hier die 4 Optionen:
+
+### Option A: EU-Provider (DSGVO-konform) — Empfohlen fur Unternehmen
+
+**cortecs.ai** (Wien, Osterreich) hostet DeepSeek, Claude, GPT und mehr in EU-Rechenzentren. Stellt einen Auftragsverarbeitungsvertrag (AVV) auf Anfrage zur Verfugung.
+
+```batch
+set "PROVIDER=openrouter"
+set "MODEL=deepseek/deepseek-v4-flash"
+set "CUSTOM_API_BASE=https://api.cortecs.ai/v1"
+```
+
+- Daten bleiben in der EU   ✅
+- AVV verfugbar   ✅
+- Kosten: ~$0.20 / $0.80 pro 1M Tokens
+
+### Option B: Lokales Modell (100 % privat)
+
+Betreibe ein lokales LLM via llama.cpp oder ollama. Keine Daten verlassen jemals deinen Rechner.
+
+```batch
+set "PROVIDER=custom"
+set "MODEL=local-model-name"
+set "CUSTOM_API_BASE=http://localhost:1234/v1"
+```
+
+- Keine Daten verlassen deinen Rechner   ✅    ✅
+- Kein Internet erforderlich   ✅
+- Kosten: $0 (nur Strom)
+
+### Option C: Direkt DeepSeek (Budget-Wahl) — Die Gunstigste
+
+Direktverbindung zur DeepSeek-API. Extrem erschwinglich.
+
+```batch
+set "PROVIDER=deepseek"
+set "MODEL=deepseek-v4-flash"
+```
+
+- Kosten: **$0.10 / $0.20** pro 1M Tokens — **97 % gunstiger als GPT-5.5**
+- Monatskosten bei 100M Tokens: **~$1.28**
+- Datenverarbeitung in China — deine Entscheidung
+- DSGVO: Nicht konform ohne zusatzliche Massnahmen
+
+### Option D: OpenRouter (Flexibel)
+
+Leite uber OpenRouter, um 400+ Modelle zu nutzen. Backend kann EU-gehostet sein.
+
+```batch
+set "PROVIDER=openrouter"
+set "MODEL=deepseek/deepseek-v4-flash"
+```
+
+- Etwas hohere Kosten (~$0.20 / $0.80)
+- EU-Backends wahlbar (DeepInfra, NovitaAI)
+- OpenRouter hat Sitz in den USA — DSGVO-Grauzone
+
+> **Vollstandige Analyse mit rechtlichen Referenzen:** [PRIVACY.de.md](PRIVACY.de.md)
+
+---
 
 **Beim ersten Start musst du auch den API-Key deines Anbieters setzen:**
 
