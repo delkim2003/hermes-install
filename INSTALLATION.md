@@ -5,6 +5,11 @@ Follow the steps in order – each builds on the previous one.
 
 **Estimated total time:** 30–45 minutes (mostly waiting for downloads).
 
+> **Path conventions:** All paths in this guide are relative to your repository folder.
+> If you cloned to `C:\hermes`, then `<REPO_DIR>` = `C:\hermes`.
+> If you cloned to `D:\hermes`, then `<REPO_DIR>` = `D:\hermes`.
+> The batch file automatically detects its own location — no manual path editing needed.
+
 ---
 
 ## Table of Contents
@@ -109,12 +114,12 @@ Should show an empty container list (no error).
 **Duration: ~2 minutes**
 
 ```powershell
-cd D:\
-git clone https://github.com/delkim2003/hermes-install.git hermes
-cd D:\hermes
+cd <REPO_DIR>
+git clone https://github.com/delkim2003/hermes-install.git .
+cd <REPO_DIR>
 ```
 
-**Result:** Folder `D:\hermes\` with all installation files:
+**Result:** Folder `<REPO_DIR>\` with all installation files:
 
 | File | Description |
 |------|-------------|
@@ -132,7 +137,7 @@ cd D:\hermes
 **Duration: 10–20 minutes (depends on internet speed)**
 
 ```powershell
-cd D:\hermes
+cd <REPO_DIR>
 docker build -t hermes-agent:latest .
 ```
 
@@ -161,7 +166,7 @@ hermes-agent    latest    a1b2c3d4e5f6   2 minutes ago    350 MB
 
 **Duration: ~5 minutes**
 
-Open `D:\hermes\hermes_start.bat` in Notepad and edit these 5 variables:
+Open `<REPO_DIR>\hermes_start.bat` in Notepad and edit these 5 variables:
 
 ```batch
 set "API_KEY=change-me-to-a-secure-password"    -> Your own password (any text)
@@ -180,7 +185,7 @@ set "WEBUI_NAME=My Company - Hermes"            -> Your company/project name
 | `PROVIDER` | ✅ Yes | AI provider: `openrouter`, `anthropic`, `openai`, `deepseek`, or `custom` |
 | `MODEL` | ✅ Yes | Model name: `anthropic/claude-sonnet-4`, `gpt-4o`, `deepseek-v4-flash`, etc. |
 | `WEBUI_NAME` | ❌ No | Display name shown in Open WebUI (top-left corner). |
-| `DUMP_DIR` | ❌ No | Path for MySQL backup. Default: `D:\hermes-db-backup\` |
+| `DUMP_DIR` | ❌ No | Path for MySQL backup. Default: `<REPO_DIR>\\backups\\` |
 
 **On first run, you also need to set your provider's API key:**
 
@@ -208,7 +213,7 @@ After running `setx`, close and reopen PowerShell, or restart your computer for 
 **Duration: ~5 minutes (first run: +2 minutes for MySQL image pull)**
 
 1. **Start Docker Desktop** (if not already running)
-2. **Double-click** `D:\hermes\hermes_start.bat`
+2. **Double-click** `<REPO_DIR>\hermes_start.bat`
 3. The batch will ask about additional drive mounts (press Enter to skip)
 4. Watch the progress – the batch runs through 8 steps:
 
@@ -298,14 +303,14 @@ Expected:
 ```powershell
 # 1. Start Docker Desktop (or it auto-starts)
 # 2. Run the batch
-D:\hermes\hermes_start.bat
+<REPO_DIR>\hermes_start.bat
 ```
 
 After ~2 minutes, all services are running.
 
 **Desktop shortcut (optional):**
 1. Right-click your desktop → New → Shortcut
-2. Location: `D:\hermes\hermes_start.bat`
+2. Location: `<REPO_DIR>\hermes_start.bat`
 3. Name: "Hermes Agent"
 4. Optional: Right-click shortcut → Properties → Advanced → "Run as administrator"
 
@@ -384,7 +389,7 @@ Check the verbose output for errors.
 
 This happens if pip couldn't install `hermes-agent`. Try:
 ```powershell
-docker build --no-cache -t hermes-agent:latest D:\hermes
+docker build --no-cache -t hermes-agent:latest .
 ```
 
 ---

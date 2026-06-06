@@ -15,7 +15,6 @@
 This repository provides a complete, production-ready deployment of **Hermes Agent** – the autonomous AI agent by Nous Research – on a local Windows machine. Everything runs in Docker, fully offline and private.
 
 ```
-  Windows 10/11
   ┌──────────────────────────────────────────────────┐
   │                                                   │
   │   ┌──────────┐   ┌───────────┐   ┌───────────┐  │
@@ -38,7 +37,7 @@ This repository provides a complete, production-ready deployment of **Hermes Age
   │                       │                         │
   │              ┌────────▼────────┐                 │
   │              │  hermes_dump.sql│                 │
-  │              │  (on D: drive)  │                 │
+  │              │  (in backups/)  │                 │
   │              └─────────────────┘                 │
   └──────────────────────────────────────────────────┘
 ```
@@ -60,17 +59,17 @@ This repository provides a complete, production-ready deployment of **Hermes Age
 ```powershell
 # 1. Install prerequisites (see INSTALLATION.md for details)
 # 2. Clone this repository
-git clone https://github.com/delkim2003/hermes-install.git D:\hermes
+git clone https://github.com/delkim2003/hermes-install.git
 
 # 3. Edit configuration
-notepad D:\hermes\hermes_start.bat
+notepad hermes_start.bat
 #   → Set API_KEY, MPASS, PROVIDER, MODEL
 
 # 4. Build the Docker image
-docker build -t hermes-agent:latest D:\hermes
+docker build -t hermes-agent:latest .
 
 # 5. Start everything
-D:\hermes\hermes_start.bat
+hermes_start.bat
 ```
 
 Open your browser to `http://localhost:3000` and start chatting.
@@ -116,7 +115,7 @@ state.db (SQLite)  ──sync──▶  MySQL  ──dump──▶  hermes_dump.
 - **Your chat data** – never leaves your machine
 - **Your AI queries** – go directly to your chosen provider (OpenRouter, etc.)
 - **No cloud tunnel** – no remote access points (by design)
-- **Dump on D:** – easily backup the entire Hermes brain to external media
+- **Automatic MySQL dump** – backup the entire Hermes brain to `backups\hermes_dump.sql`
 
 ## License
 

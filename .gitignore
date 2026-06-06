@@ -1,36 +1,28 @@
-# Hermes Datenbanken - nur lokal
+# Local databases - never commit
 state.db
 *.sql
 *.dump
 *.db
 
-# Betriebssystem
+# OS files
 Thumbs.db
 .DS_Store
 desktop.ini
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# Logs
-*.log
-logs/
-
-# Konfiguration mit Secrets
-*.env
-.env.local
-config.local.yaml
-
-# Docker
-docker-compose.override.yml
-
-# Python
+# Python cache
 __pycache__/
 *.pyc
 *.pyo
-*.egg-info/
-dist/
-build/
+
+# Editor/IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Secrets and logs
+logs/
+*.log
+
+# Temp scripts
+check_syntax.py

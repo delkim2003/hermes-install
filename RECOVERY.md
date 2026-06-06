@@ -10,6 +10,9 @@ This guide assumes:
 
 **Recovery time:** ~30 minutes (mostly downloads).
 
+> **Path conventions:** Throughout this guide, `<REPO_DIR>` refers to the folder where you cloned this repository.
+> For example: `C:\hermes`, `D:\projects\hermes`, or anywhere else.
+
 ---
 
 ## Table of Contents
@@ -33,8 +36,8 @@ You need these to recover:
 
 - [ ] Docker Desktop installed and running
 - [ ] WSL 2 enabled with Ubuntu
-- [ ] This repository cloned (`git clone https://github.com/delkim2003/hermes-install.git D:\hermes`)
-- [ ] Hermes Docker image built (`docker build -t hermes-agent:latest D:\hermes`)
+- [ ] This repository cloned (`git clone https://github.com/delkim2003/hermes-install.git`)
+- [ ] Hermes Docker image built (`docker build -t hermes-agent:latest .`)
 - [ ] Your dump file: `hermes_dump.sql`
 - [ ] Your batch configuration (API_KEY, MPASS, PROVIDER, MODEL)
 
@@ -74,15 +77,15 @@ Common locations:
 
 | Source | Typical path |
 |--------|-------------|
-| Default backup | `D:\hermes-db-backup\hermes_dump.sql` |
+| Default backup | `<REPO_DIR>\backups\hermes_dump.sql` |
 | Your copy | wherever you saved it |
 
 **Copy the dump into your repo folder** for easy access:
 
 ```powershell
-copy D:\hermes-db-backup\hermes_dump.sql D:\hermes\
+copy <REPO_DIR>\backups\hermes_dump.sql <REPO_DIR>\
 :: or from USB / network drive
-copy E:\backups\hermes_dump.sql D:\hermes\
+copy E:\backups\hermes_dump.sql <REPO_DIR>\
 ```
 
 ---
@@ -90,9 +93,9 @@ copy E:\backups\hermes_dump.sql D:\hermes\
 ## Step 3: Clone & Build
 
 ```powershell
-cd D:\
-git clone https://github.com/delkim2003/hermes-install.git hermes
-cd D:\hermes
+cd <REPO_DIR>
+git clone https://github.com/delkim2003/hermes-install.git .
+cd <REPO_DIR>
 docker build -t hermes-agent:latest .
 ```
 
@@ -126,7 +129,7 @@ echo MySQL is ready
 ### 4B: Import the Dump
 
 ```powershell
-type D:\hermes\hermes_dump.sql | docker exec -i hermes-agent-mysql mysql -uroot -pYOUR_MPASS
+type <REPO_DIR>\hermes_dump.sql | docker exec -i hermes-agent-mysql mysql -uroot -pYOUR_MPASS
 ```
 
 **Verify:**
@@ -212,7 +215,7 @@ timeout /t 5 /nobreak >nul
 
 ```powershell
 docker exec hermes-agent mkdir -p /opt/data/home/scripts
-docker cp D:\hermes\mysql_sync.py hermes-agent:/opt/data/home/scripts/mysql_sync.py
+docker cp <REPO_DIR>\mysql_sync.py hermes-agent:/opt/data/home/scripts/mysql_sync.py
 docker exec hermes-agent pip install pymysql -q
 ```
 
@@ -233,15 +236,17 @@ docker exec ^
 
 Expected output:
 ```
-[HH:MM:SS] Hermes -> MySQL Synchronisation gestartet
-[HH:MM:SS]   SQLite: /opt/data/state.db
+[HH:MM:SS] Reverse-Sync: MySQL -> SQLite for recovery
+[HH:MM:SS]   SQLite: /root/.hermes/state.db
 [HH:MM:SS]   MySQL:  root@hermes-agent-mysql:3306/hermes
-[HH:MM:SS] Modus: REVERSE - MySQL -> SQLite
-[HH:MM:SS]   XX Sessions wiederhergestellt
-[HH:MM:SS]   YY Messages wiederhergestellt
-[HH:MM:SS]   SQLite-Commit erfolgreich
-[HH:MM:SS]   Fertig: state.db wiederhergestellt aus MySQL
-[HH:MM:SS] === Synchronisation abgeschlossen ===
+[HH:MM:SS] Mode: REVERSE - MySQL -> SQLite
+[HH:MM:SS]   XX sessions restored
+[HH:MM:SS]   YY messages restored
+[HH:MM:SS]   ZZ memory entries restored
+[HH:MM:SS] Reverse sync complete: XX sessions, YY messages, ZZ memory entries restored
+[HH:MM:SS] SQLite commit successful
+[HH:MM:SS] Done: state.db restored from MySQL
+[HH:MM:SS] === Synchronization complete ===
 ```
 
 If this succeeds, **Hermes now has all your old sessions and messages back**.
@@ -276,13 +281,13 @@ All 4 containers should be running: `hermes-agent`, `hermes-dashboard`, `open-we
 
 ### 7D: Create a Fresh Dump
 
-Run `D:\hermes\hermes_start.bat` once to create a fresh backup.
+Run `<REPO_DIR>\hermes_start.bat` once to create a fresh backup.
 
 ---
 
 ## Quick Reference
 
-**One-liner recovery** (run from `D:\hermes\` after prerequisites are done):
+**One-liner recovery** (run from `<REPO_DIR>` after prerequisites are done):
 
 ```powershell
 :: 1. Start MySQL and import

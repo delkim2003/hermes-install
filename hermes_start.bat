@@ -12,7 +12,7 @@ set "MPASS=change-me-mysql-password"          :: MySQL root password - free choi
 set "PROVIDER=openrouter"                     :: AI provider: openrouter, anthropic, openai, deepseek, custom
 set "MODEL=anthropic/claude-sonnet-4"         :: AI model name
 set "WEBUI_NAME=My Company - Hermes"          :: Display name in Open WebUI
-set "DUMP_DIR=D:\hermes-db-backup"           :: Directory for MySQL backups
+set "DUMP_DIR=%REPO_ROOT%backups"              :: Directory for MySQL backups (relative to REPO_ROOT)
 :: ============================================
 
 :: Internal variables - do not edit
@@ -38,7 +38,7 @@ echo.
 :: === 2/8  Optional drive mounts ===
 echo [2/8] Mount additional folders into containers?
 set "MOUNT_VARS="
-set /p ADD_MOUNT="Folder path (Enter = skip, e.g. D:\Projects): "
+set /p ADD_MOUNT="Folder path (Enter = skip, e.g. C:\Projects): "
 if not "!ADD_MOUNT!"=="" (
     echo    Mounted folders are available at /mnt/data inside the container.
     set "MOUNT_VARS=-v "!ADD_MOUNT!:/mnt/data""
@@ -172,6 +172,7 @@ docker exec ^
     -e MYSQL_HOST=%NAME%-mysql ^
     -e MYSQL_PASS=%MPASS% ^
     -e MYSQL_DB=hermes ^
+    -e SQLITE_PATH=/root/.hermes/state.db ^
     %NAME% python3 /opt/data/home/scripts/mysql_sync.py
 
 :: Create SQL dump
