@@ -411,3 +411,16 @@ docker build --no-cache -t hermes-agent:latest .
 - Enable Hermes skills for your use case (web search, file operations, etc.)
 - Set up automated external backups of `%DUMP_DIR%`
 - Print `RECOVERY.md` and keep it with your system documentation
+
+---
+
+## Support & Contact
+
+<p align="center">
+  <strong>Built by <a href="https://einfach-online.dev">einfach-online.dev</a></strong><br/>
+  Philipp Schlemmer | info@einfach-online.dev | +43 664 2550 779<br/>
+  <em>Local First. Performance Driven. Privacy Centric.</em>
+</p>
+
+Need help with installation or a custom deployment?
+[Send me an email](mailto:info@einfach-online.dev) — I reply within 24 hours.

@@ -365,3 +365,17 @@ To avoid a future disaster, back up **these 3 things** regularly:
 | **This repo** | GitHub | Always available |
 
 The MySQL dump is the most important – it contains everything Hermes knows.
+
+---
+
+## Support & Contact
+
+<p align="center">
+  <strong>Built by <a href="https://einfach-online.dev">einfach-online.dev</a></strong><br/>
+  Philipp Schlemmer | info@einfach-online.dev | +43 664 2550 779<br/>
+  <em>Local First. Performance Driven. Privacy Centric.</em>
+</p>
+
+This recovery system was designed and tested by [einfach-online.dev](https://einfach-online.dev) — Austrian specialists in DSGVO-compliant, local-first AI infrastructure.
+
+Need help with recovery? [Send me an email](mailto:info@einfach-online.dev).
