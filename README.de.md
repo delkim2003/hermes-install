@@ -19,13 +19,32 @@
 
 ---
 
-## Uberblick
+## Was ist das?
 
-Das **Hermes Agent Deployment Kit** ist ein produktionsreifes, null-Konfiguration Deployment-System fur [Hermes Agent](https://hermes-agent.nousresearch.com) von Nous Research -- den autonomen KI-Agenten fur Entwickler.
+**Hermes Agent Deployment Kit** ermoglicht dir, einen vollwertigen autonomen KI-Agenten auf deinem Windows-Rechner in unter 2 Minuten einzurichten. Eine einzige Batch-Datei startet alles: API-Server, Chat-Oberflache, MySQL-Datenbank und automatische Backups.
 
-Alles lauft **lokal in Docker**. Keine Cloud-Abhangigkeit. Keine Daten verlassen deinen Rechner.
+**[Hermes Agent](https://hermes-agent.nousresearch.com)** ist ein Open-Source-KI-Agent von Nous Research. Er kann im Web surfen, Terminal-Befehle ausfuhren, Dateien lesen und schreiben, deine Codebasis durchsuchen und Aufgaben an Unter-Agenten delegieren -- alles durch naturliche Unterhaltung.
 
-> Entwickelt von [einfach-online.dev](https://einfach-online.dev) -- einer osterreichischen Web-Agentur fur DSGVO-konforme, local-first Infrastruktur.
+Dieses Kit macht das Deployment denkbar einfach. Kein Docker Compose, keine manuelle Konfiguration, keine ubersprungenen Schritte.
+
+---
+
+## Wie es funktioniert
+
+Du fuhrst **eine Datei** aus (`hermes_start.bat`). Sie erledigt den Rest:
+
+| # | Was passiert |
+|---|-------------|
+| 1 | Erstellt ein Docker-Netzwerk (`hermes-net`) |
+| 2 | Fragt ob zusatzliche Ordner gemountet werden sollen |
+| 3 | Schreibt die Hermes-Konfiguration (`~/.hermes/config.yaml`) |
+| 4 | Startet Hermes Dashboard (Port 9119) |
+| 5 | Startet Hermes API Server (Port 8642) |
+| 6 | Startet Open WebUI Chat-Oberflache (Port 3000) |
+| 7 | Startet MySQL 8.0 + synchronisiert state.db + erstellt Dump |
+| 8 | Zeigt alle laufenden Container und URLs |
+
+Gesamtzeit: ~90 Sekunden. Keine manuellen Schritte.
 
 ---
 
@@ -58,51 +77,40 @@ Alles lauft **lokal in Docker**. Keine Cloud-Abhangigkeit. Keine Daten verlassen
 | Komponente | Beschreibung |
 |------------|--------------|
 | Hermes API Server | Kern-KI-Agent, OpenAI-kompatible API auf Port 8642 |
-| Hermes Dashboard | Web-Oberflache fur Agent-Management auf Port 9119 |
-| Open WebUI | ChatGPT-artige Oberflache auf Port 3000 |
-| MySQL 8.0 | Persistente Sicherung von Sessions und Memory |
-| Automatischer Dump | mysqldump bei jedem Start auf die Festplatte |
-| Wiederherstellung | Komplette Notfall-Wiederherstellung aus einer SQL-Datei |
+| Hermes Dashboard | Webbasiertes Dashboard zur Uberwachung auf Port 9119 |
+| Open WebUI | Vollstandige Chat-Oberflache auf Port 3000 |
+| MySQL 8.0 | Permanente Speicherung von Sessions und Memory |
+| Automatischer Dump | `mysqldump` erstellt bei jedem Start ein vollstandiges Backup |
+| Sub-Agent Support | Hermes kann autonome Unter-Agenten fur parallele Arbeit starten |
+| Recovery Ready | Reverse-Sync stellt alles aus einem einzigen SQL-Dump wieder her |
 
 ---
 
 ## Voraussetzungen
 
-| Voraussetzung | Version / Details |
-|---------------|-------------------|
-| Windows 10/11 | Pro oder Home mit WSL2 |
-| WSL 2 | Ubuntu 22.04 oder neuer |
-| Docker Desktop | 4.x oder neuer, WSL2-Backend |
-| Git | Aktuelle Version |
-| Festplatte | 5 GB frei (Docker-Images + Daten) |
+| Anforderung | Version | Hinweise |
+|-------------|---------|----------|
+| Windows 10/11 | Pro oder Home | WSL2-Unterstutzung erforderlich |
+| Docker Desktop | 4.x+ | [Download](https://www.docker.com/products/docker-desktop/) |
+| WSL2 | Aktiviert | [Anleitung](https://learn.microsoft.com/de-de/windows/wsl/install) |
+| RAM | 4 GB+ | Hermes ~200 MB, MySQL ~200 MB |
+| Festplatte | 2 GB | Docker-Images, MySQL-Volume |
 
 ---
 
 ## Schnellstart
 
 ```powershell
-# 1. Repository klonen
-cd D:\
-git clone https://github.com/delkim2003/hermes-install.git hermes
-cd hermes
+# 1. Klonen
+git clone https://github.com/delkim2003/hermes-install.git D:\hermes
 
-# 2. Hermes Docker-Image bauen
-docker build -t hermes-agent:latest .
+# 2. Konfiguration anpassen
+notepad D:\hermes\hermes_start.bat
+# Andern: API_KEY, MPASS, PROVIDER, MODEL, WEBUI_NAME
 
-# 3. Konfiguration bearbeiten
-notepad hermes_start.bat
-```
+# 3. Docker-Image bauen
+docker build -t hermes-agent:latest D:\hermes
 
-In der Batch-Datei mussen diese Variablen gesetzt werden:
-
-| Variable | Beispiel | Beschreibung |
-|----------|----------|--------------|
-| `PROVIDER` | `openrouter` | Dein KI-Anbieter |
-| `MODEL` | `anthropic/claude-sonnet-4` | Modellname deines Anbieters |
-| `API_KEY` | `sk-...` | Dein API-Key |
-| `MPASS` | `mein_sicheres_passwort` | MySQL-Root-Passwort |
-
-```powershell
 # 4. Starten
 hermes_start.bat
 ```

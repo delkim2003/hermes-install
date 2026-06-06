@@ -19,13 +19,32 @@
 
 ---
 
-## Overview
+## What is this?
 
-**Hermes Agent Deployment Kit** is a production-ready, zero-configuration deployment system for [Hermes Agent](https://hermes-agent.nousresearch.com) by Nous Research -- the autonomous AI agent for developers.
+**Hermes Agent Deployment Kit** lets you set up a fully autonomous AI agent on your Windows machine in under 2 minutes. One batch file starts everything: API server, chat interface, MySQL database, and automated backups.
 
-Everything runs **locally in Docker**. No cloud dependency. No data leaves your machine.
+**[Hermes Agent](https://hermes-agent.nousresearch.com)** is an open-source AI agent by Nous Research. It can browse the web, run terminal commands, read and write files, search your codebase, and delegate tasks to sub-agents -- all through natural conversation.
 
-> Built by [einfach-online.dev](https://einfach-online.dev) -- an Austrian web agency specializing in DSGVO-compliant, local-first infrastructure.
+This kit makes it dead simple to deploy. No Docker Compose, no manual config, no missing steps.
+
+---
+
+## How it works
+
+You run **one file** (`hermes_start.bat`). It does the rest:
+
+| # | What happens |
+|---|-------------|
+| 1 | Creates a Docker network (`hermes-net`) |
+| 2 | Asks if you want to mount folders into containers |
+| 3 | Writes Hermes config file (`~/.hermes/config.yaml`) |
+| 4 | Starts Hermes Dashboard (port 9119) |
+| 5 | Starts Hermes API Server (port 8642) |
+| 6 | Starts Open WebUI chat interface (port 3000) |
+| 7 | Starts MySQL 8.0 + syncs state.db + creates dump |
+| 8 | Shows running containers and URLs |
+
+Total time: ~90 seconds. No manual steps.
 
 ---
 
@@ -58,51 +77,40 @@ Everything runs **locally in Docker**. No cloud dependency. No data leaves your 
 | Component | Description |
 |-----------|-------------|
 | Hermes API Server | Core AI agent, OpenAI-compatible API on port 8642 |
-| Hermes Dashboard | Web UI for agent management on port 9119 |
-| Open WebUI | ChatGPT-style interface on port 3000 |
-| MySQL 8.0 | Persistent session and memory backup |
-| Automated dump | Cron-fresh mysqldump to disk on every start |
-| Recovery-ready | Full disaster recovery from a single SQL file |
+| Hermes Dashboard | Web-based dashboard for monitoring at port 9119 |
+| Open WebUI | Full chat interface at port 3000 |
+| MySQL 8.0 | Persistent session and memory storage |
+| Automated Dump | `mysqldump` creates a full backup on every start |
+| Sub-agent Support | Hermes can spawn autonomous sub-agents for parallel work |
+| Recovery Ready | Reverse-sync restores everything from a single SQL dump |
 
 ---
 
 ## Requirements
 
-| Requirement | Version / Details |
-|-------------|-------------------|
-| Windows 10/11 | Pro or Home with WSL2 |
-| WSL 2 | Ubuntu 22.04 or later |
-| Docker Desktop | 4.x or later, WSL2 backend |
-| Git | Any recent version |
-| Disk space | 5 GB free (Docker images + data) |
+| Requirement | Version | Notes |
+|-------------|---------|-------|
+| Windows 10/11 | Pro or Home | WSL2 support required |
+| Docker Desktop | 4.x+ | [Download](https://www.docker.com/products/docker-desktop/) |
+| WSL2 | Enabled | [Guide](https://learn.microsoft.com/en-us/windows/wsl/install) |
+| RAM | 4 GB+ | Hermes ~200 MB, MySQL ~200 MB |
+| Disk | 2 GB | Docker images, MySQL volume |
 
 ---
 
 ## Quick Start
 
 ```powershell
-# 1. Clone the repository
-cd D:\
-git clone https://github.com/delkim2003/hermes-install.git hermes
-cd hermes
+# 1. Clone
+git clone https://github.com/delkim2003/hermes-install.git D:\hermes
 
-# 2. Build the Hermes Docker image
-docker build -t hermes-agent:latest .
+# 2. Edit config
+notepad D:\hermes\hermes_start.bat
+# Change: API_KEY, MPASS, PROVIDER, MODEL, WEBUI_NAME
 
-# 3. Edit configuration
-notepad hermes_start.bat
-```
+# 3. Build Docker image
+docker build -t hermes-agent:latest D:\hermes
 
-In the batch file, set these variables:
-
-| Variable | Example | Description |
-|----------|---------|-------------|
-| `PROVIDER` | `openrouter` | Your AI provider name |
-| `MODEL` | `anthropic/claude-sonnet-4` | Model name from your provider |
-| `API_KEY` | `sk-...` | Your provider API key |
-| `MPASS` | `my_secure_password` | MySQL root password |
-
-```powershell
 # 4. Run
 hermes_start.bat
 ```
@@ -169,8 +177,8 @@ A: Yes. Clone the repo to a second directory, change port mappings in the batch 
 |----------|------|---------|
 | [EN] | [INSTALLATION.md](INSTALLATION.md) | Full installation guide from blank Windows |
 | [EN] | [RECOVERY.md](RECOVERY.md) | Disaster recovery instructions |
-| [DE] | [INSTALLATION.de.md](INSTALLATION.de.md) | Vollstandige Installationsanleitung auf Deutsch |
-| [DE] | [README.de.md](README.de.md) | Deutsche Version dieser README |
+| [DE] | [INSTALLATION.de.md](INSTALLATION.de.md) | Full installation guide in German |
+| [DE] | [README.de.md](README.de.md) | This README in German |
 
 ---
 
@@ -180,4 +188,4 @@ Apache 2.0 -- free to use, modify, and distribute.
 
 ---
 
-Built with care by [einfach-online.dev](https://einfach-online.de) -- Local First. Performance Driven. Privacy Centric.
+Built with care by [einfach-online.dev](https://einfach-online.dev) -- Local First. Performance Driven. Privacy Centric.

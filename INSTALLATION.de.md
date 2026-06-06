@@ -446,7 +446,7 @@ Die vollständige Wiederherstellungsanleitung findest du in der separaten Datei 
 
 <p align="center">
   <strong>Entwickelt von <a href="https://einfach-online.dev">einfach-online.dev</a></strong><br/>
-  Philipp Schlemmer | info@einfach-online.dev | +43 664 2550 779<br/>
+  info@einfach-online.dev<br/>
   <em>Local First. Performance Driven. Privacy Centric.</em>
 </p>
 
