@@ -28,7 +28,6 @@ This document explains where your data lives, where it goes, and what privacy gu
   Your Windows Machine
   +-------------------------------+
   | Hermes Agent (local runtime)  |   ← NEVER leaves your machine
-  | Open WebUI (local container)  |   ← NEVER leaves your machine
   | Dashboard (local container)   |   ← NEVER leaves your machine
   | MySQL DB (local container)    |   ← NEVER leaves your machine
   | state.db (SQLite on disk)     |   ← NEVER leaves your machine

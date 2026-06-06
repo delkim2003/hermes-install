@@ -166,25 +166,23 @@ hermes-agent    latest    a1b2c3d4e5f6   2 minutes ago    350 MB
 
 **Duration: ~5 minutes**
 
-Open `<REPO_DIR>\hermes_start.bat` in Notepad and edit these 5 variables:
+Open `<REPO_DIR>\hermes_start.bat` in Notepad and edit these 4 variables:
 
 ```batch
 set "API_KEY=change-me-to-a-secure-password"    -> Your own password (any text)
 set "MPASS=change-me-mysql-password"            -> MySQL root password (any text)
 set "PROVIDER=openrouter"                       -> Your AI provider
 set "MODEL=anthropic/claude-sonnet-4"           -> Your AI model
-set "WEBUI_NAME=My Company - Hermes"            -> Your company/project name
 ```
 
 **Variable reference:**
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `API_KEY` | ✅ Yes | Any password. Used for API authentication between Hermes and Open WebUI. |
+| `API_KEY` | ✅ Yes | Any password. Used for API authentication for the Hermes API Server. |
 | `MPASS` | ✅ Yes | MySQL root password. Used for the database container and backups. |
 | `PROVIDER` | ✅ Yes | AI provider. See [provider options below](#choosing-your-ai-provider). |
 | `MODEL` | ✅ Yes | Model name: `deepseek-v4-flash`, `anthropic/claude-sonnet-4`, `gpt-4o`, `local-model`, etc. |
-| `WEBUI_NAME` | ❌ No | Display name shown in Open WebUI (top-left corner). |
 | `DUMP_DIR` | ❌ No | Path for MySQL backup. Default: `<REPO_DIR>\\backups\\` |
 
 ---
@@ -292,7 +290,6 @@ After running `setx`, close and reopen PowerShell, or restart your computer for 
 [3/8] Create config          → Writes %USERPROFILE%\.hermes\config.yaml
 [4/8] Dashboard              → Starts Hermes Dashboard on port 9119
 [5/8] API Server             → Starts Hermes API on port 8642
-[6/8] Open WebUI             → Starts chat UI on port 3000
 [7/8] MySQL + Sync + Dump    → Starts MySQL, syncs database, creates dump
 [8/8] Summary                → Shows all running services
 ```
@@ -316,7 +313,6 @@ After the batch finishes successfully:
 |---------|-----|-----------------|
 | **Hermes API** | http://localhost:8642/v1/models | JSON with model list |
 | **Hermes Dashboard** | http://localhost:9119 | Hermes status page |
-| **Open WebUI** | http://localhost:3000 | Login/register page |
 
 **API Test:**
 ```powershell
@@ -325,19 +321,9 @@ curl http://localhost:8642/v1/models
 
 Should return a JSON array with your configured model.
 
-**Open WebUI Login:**
-- First visit: Create an account (username + password – free choice)
-- You should see your configured `WEBUI_NAME` in the top-left corner
-- Select your model from the dropdown at the top of the chat
-
 **Dashboard Check:**
 - Open http://localhost:9119
 - Should show the Hermes dashboard with service status
-
-**Send a test message:**
-1. Go to Open WebUI (http://localhost:3000)
-2. Start a new chat
-3. Type "Hello" – Hermes should respond
 
 ---
 
@@ -393,7 +379,7 @@ docker ps --filter network=hermes-net
 docker logs hermes-agent
 
 # Stop all services (without running the batch)
-docker stop hermes-agent open-webui hermes-dashboard hermes-agent-mysql
+docker stop hermes-agent hermes-dashboard hermes-agent-mysql
 ```
 
 ### Backup Strategy
@@ -448,12 +434,6 @@ Check the verbose output for errors.
 - Check that your provider's API key is set as a Windows environment variable
 - Restart the API server: `docker restart hermes-agent`
 
-### Open WebUI shows "No model selected"
-
-- Open WebUI → click the model dropdown at the top → select your model
-- If it's not there, restart the API server: `docker restart hermes-agent`
-- If the name doesn't match, check the `MODEL` variable in your batch file
-
 ### "hermes: command not found" in Docker build
 
 This happens if pip couldn't install `hermes-agent`. Try:
@@ -465,7 +445,6 @@ docker build --no-cache -t hermes-agent:latest .
 
 ## Post-Installation Checklist
 
-- [ ] Open WebUI login works
 - [ ] You can send a message and get a response
 - [ ] MySQL dump exists in `%DUMP_DIR%`
 - [ ] Desktop shortcut created
@@ -476,7 +455,6 @@ docker build --no-cache -t hermes-agent:latest .
 
 ## Next Steps
 
-- Customize Open WebUI with your company logo and colors
 - Enable Hermes skills for your use case (web search, file operations, etc.)
 - Set up automated external backups of `%DUMP_DIR%`
 - Print `RECOVERY.md` and keep it with your system documentation

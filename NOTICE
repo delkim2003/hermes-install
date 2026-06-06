@@ -8,18 +8,14 @@ This product includes software developed by:
    Copyright (c) 2025 Nous Research
    Licensed under Apache License, Version 2.0
 
-2. Open WebUI (https://github.com/open-webui/open-webui)
-   Copyright (c) 2024 Timothy Jaeryang Baek
-   Licensed under MIT License
-
-3. MySQL 8.0 (https://github.com/mysql/mysql-server)
+2. MySQL 8.0 (https://github.com/mysql/mysql-server)
    Copyright (c) 2024 Oracle and/or its affiliates
    Licensed under GNU General Public License v2.0
 
-4. Python 3.12 (https://www.python.org/)
+3. Python 3.12 (https://www.python.org/)
    Copyright (c) Python Software Foundation
    Licensed under Python Software Foundation License
 
-5. PyMySQL (https://github.com/PyMySQL/PyMySQL)
+4. PyMySQL (https://github.com/PyMySQL/PyMySQL)
    Copyright (c) 2014, 2016 PyMySQL contributors
    Licensed under MIT License

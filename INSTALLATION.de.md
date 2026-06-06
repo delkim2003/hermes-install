@@ -182,25 +182,23 @@ hermes-agent    latest    a1b2c3d4e5f6   2 Minuten ago    350 MB
 
 **Dauer: ~5 Minuten**
 
-Öffne `<REPO_DIR>\hermes_start.bat` mit Notepad und editiere diese 5 Variablen:
+Öffne `<REPO_DIR>\hermes_start.bat` mit Notepad und editiere diese 4 Variablen:
 
 ```batch
 set "API_KEY=change-me-to-a-secure-password"    -> Dein eigenes Passwort (beliebiger Text)
 set "MPASS=change-me-mysql-password"            -> MySQL Root-Passwort (beliebiger Text)
 set "PROVIDER=openrouter"                       -> Dein KI-Anbieter
 set "MODEL=anthropic/claude-sonnet-4"           -> Dein KI-Modell
-set "WEBUI_NAME=Meine Firma - Hermes"           -> Dein Firmen-/Projektname
 ```
 
 **Variablen-Referenz:**
 
 | Variable | Pflicht | Beschreibung |
 |----------|---------|-------------|
-| `API_KEY` | ✅ Ja | Beliebiges Passwort. Wird fur API-Authentifizierung zwischen Hermes und Open WebUI verwendet. |
+| `API_KEY` | ✅ Ja | Beliebiges Passwort. Wird fur API-Authentifizierung des Hermes API Servers verwendet. |
 | `MPASS` | ✅ Ja | MySQL Root-Passwort. Wird fur den Datenbank-Container und Backups verwendet. |
 | `PROVIDER` | ✅ Ja | KI-Anbieter. Siehe [Provider-Wahl unten](#provider-wahl-und-datenschutz). |
 | `MODEL` | ✅ Ja | Modellname: `deepseek-v4-flash`, `anthropic/claude-sonnet-4`, `gpt-4o`, `local-model`, etc. |
-| `WEBUI_NAME` | ❌ Nein | Anzeigename in Open WebUI (oben links). |
 | `DUMP_DIR` | ❌ Nein | Pfad fur MySQL-Backup. Standard: `<REPO_DIR>\\backups\\` |
 
 ---
@@ -308,7 +306,6 @@ Nachdem du `setx` ausgeführt hast, schliesse PowerShell und öffne es neu, oder
 [3/8] Config erstellen      → Schreibt %USERPROFILE%\.hermes\config.yaml
 [4/8] Dashboard             → Startet Hermes Dashboard auf Port 9119
 [5/8] API Server            → Startet Hermes API auf Port 8642
-[6/8] Open WebUI            → Startet Chat-Oberfläche auf Port 3000
 [7/8] MySQL + Sync + Dump   → Startet MySQL, synchronisiert DB, erstellt Dump
 [8/8] Zusammenfassung       → Zeigt alle laufenden Dienste
 ```
@@ -332,7 +329,6 @@ Nach erfolgreichem Batch-Durchlauf:
 |--------|-----|---------------------|
 | **Hermes API** | http://localhost:8642/v1/models | JSON mit Modell-Liste |
 | **Hermes Dashboard** | http://localhost:9119 | Hermes-Statusseite |
-| **Open WebUI** | http://localhost:3000 | Anmelde-/Registrierungsseite |
 
 **API-Test:**
 ```powershell
@@ -341,19 +337,9 @@ curl http://localhost:8642/v1/models
 
 Sollte ein JSON-Array mit deinem konfigurierten Modell zurückgeben.
 
-**Open WebUI Anmeldung:**
-- Beim ersten Besuch: Konto erstellen (Benutzername + Passwort – frei wählbar)
-- Dein konfigurierter `WEBUI_NAME` sollte oben links erscheinen
-- Wähle dein Modell aus dem Dropdown oben im Chat aus
-
 **Dashboard-Prüfung:**
 - Öffne http://localhost:9119
 - Sollte das Hermes-Dashboard mit Servicestatus anzeigen
-
-**Testnachricht senden:**
-1. Gehe zu Open WebUI (http://localhost:3000)
-2. Starte einen neuen Chat
-3. Tippe "Hallo" – Hermes sollte antworten
 
 ---
 
@@ -409,7 +395,7 @@ docker ps --filter network=hermes-net
 docker logs hermes-agent
 
 # Alle Dienste stoppen (ohne die Batch)
-docker stop hermes-agent open-webui hermes-dashboard hermes-agent-mysql
+docker stop hermes-agent hermes-dashboard hermes-agent-mysql
 ```
 
 ### Backup-Strategie
@@ -464,12 +450,6 @@ Prüfe die ausführliche Ausgabe auf Fehler.
 - Prüfe ob der API-Key deines Anbieters als Windows-Umgebungsvariable gesetzt ist
 - Starte den API-Server neu: `docker restart hermes-agent`
 
-### Open WebUI zeigt "Kein Modell ausgewählt"
-
-- Open WebUI → Modell-Dropdown oben → dein Modell auswählen
-- Falls es nicht da ist, API-Server neustarten: `docker restart hermes-agent`
-- Falls der Name nicht stimmt, prüfe die `MODEL`-Variable in der Batch-Datei
-
 ### "hermes: command not found" beim Docker-Build
 
 Das passiert, wenn pip `hermes-agent` nicht installieren konnte. Versuche:
@@ -493,7 +473,6 @@ Die vollständige Wiederherstellungsanleitung findest du in der separaten Datei 
 
 ## Checkliste nach der Installation
 
-- [ ] Open WebUI-Anmeldung funktioniert
 - [ ] Du kannst eine Nachricht senden und erhältst eine Antwort
 - [ ] MySQL-Dump existiert in `%DUMP_DIR%`
 - [ ] Desktop-Verknüpfung erstellt
@@ -504,7 +483,6 @@ Die vollständige Wiederherstellungsanleitung findest du in der separaten Datei 
 
 ## Nächste Schritte
 
-- Passe Open WebUI mit deinem Firmenlogo und Farben an
 - Aktiviere Hermes-Skills für deinen Anwendungsfall (Websuche, Dateioperationen, etc.)
 - Richte automatische externe Backups von `%DUMP_DIR%` ein
 - Drucke `RECOVERY.md` aus und verwahre es bei deiner Systemdokumentation

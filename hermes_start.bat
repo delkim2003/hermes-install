@@ -18,14 +18,14 @@ set "PROVIDER=openrouter"                     :: AI provider: openrouter, anthro
                                              ::   EU/GDPR: use openrouter + set CUSTOM_API_BASE=https://api.cortecs.ai/v1
                                              ::   Private: deepseek ($1.28/month), Free: local-model + ollama
 set "MODEL=anthropic/claude-sonnet-4"         :: AI model name
-set "WEBUI_NAME=My Company - Hermes"          :: Display name in Open WebUI
+
 set "DUMP_DIR=%REPO_ROOT%backups"              :: Directory for MySQL backups (relative to REPO_ROOT)
 :: ============================================
 
 :: Internal variables - do not edit
 set "REPO_ROOT=%~dp0"
 set "NAME=hermes-agent"
-set "OWUI=open-webui"
+
 set "HERMES_API_KEY=%API_KEY%"
 
 echo ======================================
@@ -33,8 +33,8 @@ echo    Hermes Agent - Starting all services
 echo ======================================
 echo.
 
-:: === 1/8  Docker Network ===
-echo [1/8] Setting up Docker network...
+:: === 1/7  Docker Network ===
+echo [1/7] Setting up Docker network...
 docker network inspect hermes-net >nul 2>&1 && (
     echo    Network 'hermes-net' already exists.
 ) || (
@@ -42,8 +42,8 @@ docker network inspect hermes-net >nul 2>&1 && (
 )
 echo.
 
-:: === 2/8  Optional drive mounts ===
-echo [2/8] Mount additional folders into containers?
+:: === 2/7  Optional drive mounts ===
+echo [2/7] Mount additional folders into containers?
 set "MOUNT_VARS="
 set /p ADD_MOUNT="Folder path (Enter = skip, e.g. C:\Projects): "
 if not "!ADD_MOUNT!"=="" (
@@ -55,8 +55,8 @@ if not "!ADD_MOUNT!"=="" (
 )
 echo.
 
-:: === 3/8  Create Hermes config ===
-echo [3/8] Creating Hermes configuration...
+:: === 3/7  Create Hermes config ===
+echo [3/7] Creating Hermes configuration...
 if not exist "%USERPROFILE%\.hermes" mkdir "%USERPROFILE%\.hermes"
 (
 echo # Hermes Agent Configuration
@@ -81,8 +81,8 @@ echo   - vision
 echo    Config written: %USERPROFILE%\.hermes\config.yaml
 echo.
 
-:: === 4/8  Dashboard ===
-echo [4/8] Starting Hermes Dashboard...
+:: === 4/7  Dashboard ===
+echo [4/7] Starting Hermes Dashboard...
 docker rm -f hermes-dashboard >nul 2>&1
 docker run -d --restart=unless-stopped --network=hermes-net ^
     --name=hermes-dashboard -h hermes-dashboard ^
@@ -93,8 +93,8 @@ docker run -d --restart=unless-stopped --network=hermes-net ^
     hermes dashboard --host 0.0.0.0 --port 9119
 echo.
 
-:: === 5/8  API Server ===
-echo [5/8] Starting Hermes API Server...
+:: === 5/7  API Server ===
+echo [5/7] Starting Hermes API Server...
 docker rm -f %NAME% >nul 2>&1
 docker run -d --restart=unless-stopped --network=hermes-net ^
     --name=%NAME% -h %NAME% ^
@@ -110,22 +110,10 @@ docker run -d --restart=unless-stopped --network=hermes-net ^
     hermes api-server --host 0.0.0.0 --port 8642
 echo.
 
-:: === 6/8  Open WebUI ===
-echo [6/8] Starting Open WebUI...
-docker rm -f %OWUI% >nul 2>&1
-docker run -d --restart=unless-stopped --network=hermes-net ^
-    --name=%OWUI% -h %OWUI% ^
-    -e OPENAI_API_BASE_URL="http://%NAME%:8642/v1" ^
-    -e OPENAI_API_KEY="%API_KEY%" ^
-    -e WEBUI_NAME="%WEBUI_NAME%" ^
-    -e WEBUI_SECRET_KEY="%API_KEY%" ^
-    -p 3000:8080 ^
-    --label "com.centurylinklabs.watchtower.enable=false" ^
-    ghcr.io/open-webui/open-webui:main
-echo.
 
-:: === 7/8  MySQL + Sync + Dump ===
-echo [7/8] Starting MySQL and syncing database...
+
+:: === 6/7  MySQL + Sync + Dump ===
+echo [6/7] Starting MySQL and syncing database...
 
 :: MySQL Container
 docker rm -f %NAME%-mysql >nul 2>&1
@@ -196,14 +184,14 @@ goto end_sync
 echo    Sync skipped (container not ready).
 :end_sync
 
-:: === 8/8  Summary ===
+:: === 7/7  Summary ===
 echo ======================================
 echo    ALL SERVICES STARTED
 echo ======================================
 echo.
 echo    Hermes API      : http://localhost:8642
 echo    Hermes Dashboard: http://localhost:9119
-echo    Open WebUI      : http://localhost:3000
+echo    (Open WebUI entfernt)
 echo    MySQL           : %NAME%-mysql:3306
 echo    MySQL Dump      : %DUMP_DIR%\hermes_dump.sql
 echo.
@@ -211,7 +199,7 @@ echo    Running containers:
 docker ps --filter network=hermes-net --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 echo.
 echo    View logs: docker logs <container-name>
-echo    Stop all : docker stop %NAME% %OWUI% hermes-dashboard hermes-agent-mysql
+echo    Stop all : docker stop %NAME% hermes-dashboard hermes-agent-mysql
 echo.
 echo    Provider : %PROVIDER%
 echo    Model    : %MODEL%

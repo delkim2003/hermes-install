@@ -28,7 +28,6 @@ Dieses Dokument erklart, wo deine Daten leben, wohin sie gehen und welche Datens
   Dein Windows-Rechner
   +-------------------------------+
   | Hermes Agent (lokale Laufzeit)|   ← VERLASST NIEMALS deinen Rechner
-  | Open WebUI (lokaler Container)|   ← VERLASST NIEMALS deinen Rechner
   | Dashboard (lokaler Container) |   ← VERLASST NIEMALS deinen Rechner
   | MySQL DB (lokaler Container)  |   ← VERLASST NIEMALS deinen Rechner
   | state.db (SQLite auf Platte)  |   ← VERLASST NIEMALS deinen Rechner

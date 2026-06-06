@@ -202,15 +202,7 @@ docker run -d --restart=unless-stopped --network=hermes-net ^
     hermes-agent:latest ^
     hermes api-server --host 0.0.0.0 --port 8642
 
-:: Open WebUI
-docker run -d --restart=unless-stopped --network=hermes-net ^
-    --name=open-webui -h open-webui ^
-    -e OPENAI_API_BASE_URL="http://hermes-agent:8642/v1" ^
-    -e OPENAI_API_KEY="DEIN_API_KEY" ^
-    -e WEBUI_NAME="Meine Firma - Hermes" ^
-    -e WEBUI_SECRET_KEY="DEIN_API_KEY" ^
-    -p 3000:8080 ^
-    ghcr.io/open-webui/open-webui:main
+
 ```
 
 Warte auf den API-Server:
@@ -271,21 +263,13 @@ curl http://localhost:8642/v1/models
 
 Sollte deine Modell-Liste zuruckgeben.
 
-### 7B: Open WebUI
-
-Offne http://localhost:3000 im Browser.
-
-- Deine alten Chat-Sessions sollten in der Seitenleiste erscheinen
-- Du kannst Gesprache dort fortsetzen, wo du aufgehort hast
-- Alle Memory-Eintrage sind wiederhergestellt
-
-### 7C: Container-Status
+### 7B: Container-Status
 
 ```powershell
 docker ps --filter network=hermes-net
 ```
 
-Alle 4 Container sollten laufen: `hermes-agent`, `hermes-dashboard`, `open-webui`, `hermes-agent-mysql`.
+Alle 3 Container sollten laufen: `hermes-agent`, `hermes-dashboard`, `hermes-agent-mysql`.
 
 ### 7D: Frischen Dump erstellen
 
@@ -309,7 +293,6 @@ type hermes_dump.sql | docker exec -i hermes-agent-mysql mysql -uroot -pDEIN_MPA
 :: 2. Hermes starten
 docker run -d --restart=unless-stopped --network=hermes-net --name=hermes-dashboard -h hermes-dashboard -v "%USERPROFILE%\\.hermes:/root/.hermes" -p 9119:9119 hermes-agent:latest hermes dashboard --host 0.0.0.0 --port 9119
 docker run -d --restart=unless-stopped --network=hermes-net --name=hermes-agent -h hermes-agent -v "%USERPROFILE%\\.hermes:/root/.hermes" -e HERMES_PROVIDER_OVERRIDE="DEIN_PROVIDER" -e HERMES_MODEL_OVERRIDE="DEIN_MODELL" -e HERMES_API_KEY="DEIN_API_KEY" -p 8642:8642 -p 8641:8641 hermes-agent:latest hermes api-server --host 0.0.0.0 --port 8642
-docker run -d --restart=unless-stopped --network=hermes-net --name=open-webui -h open-webui -e OPENAI_API_BASE_URL="http://hermes-agent:8642/v1" -e OPENAI_API_KEY="DEIN_API_KEY" -e WEBUI_NAME="Meine Firma - Hermes" -e WEBUI_SECRET_KEY="DEIN_API_KEY" -p 3000:8080 ghcr.io/open-webui/open-webui:main
 timeout /t 10 /nobreak >nul
 
 :: 3. Reverse Sync
@@ -319,7 +302,7 @@ docker exec hermes-agent pip install pymysql -q
 docker exec -e MYSQL_HOST=hermes-agent-mysql -e MYSQL_PASS=DEIN_MPASS -e MYSQL_DB=hermes -e SYNC_DIRECTION=reverse hermes-agent python3 /opt/data/home/scripts/mysql_sync.py
 
 :: 4. Fertig
-echo Hermes aus Dump wiederhergestellt. Offne http://localhost:3000
+echo Hermes aus Dump wiederhergestellt.
 ```
 
 ---
@@ -357,11 +340,6 @@ docker exec hermes-agent-mysql mysqladmin ping -uroot -pDEIN_MPASS --silent  # E
 ### Dump-Datei ist leer oder beschadigt
 
 -> Stelle von einer alteren Backup-Kopie wieder her. Prufe `%DUMP_DIR%` auf fruhere Versionen.
-
-### Open WebUI zeigt keine alten Chats
-
--> Der Reverse Sync ist moglicherweise fehlgeschlagen. Prufe die Sync-Ausgabe auf Fehler.
--> Versuche den Reverse-Sync-Befehl erneut auszufuhren.
 
 ---
 

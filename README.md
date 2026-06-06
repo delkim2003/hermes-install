@@ -33,16 +33,15 @@ This kit makes it dead simple to deploy. No Docker Compose, no manual config, no
 
 You run **one file** (`hermes_start.bat`). It does the rest:
 
-| # | What happens |
-|---|-------------|
-| 1 | Creates a Docker network (`hermes-net`) |
-| 2 | Asks if you want to mount folders into containers |
-| 3 | Writes Hermes config file (`~/.hermes/config.yaml`) |
-| 4 | Starts Hermes Dashboard (port 9119) |
-| 5 | Starts Hermes API Server (port 8642) |
-| 6 | Starts Open WebUI chat interface (port 3000) |
-| 7 | Starts MySQL 8.0 + syncs state.db + creates dump |
-| 8 | Shows running containers and URLs |
+|| # | What happens |
+||---|-------------|
+|| 1 | Creates a Docker network (`hermes-net`) |
+|| 2 | Asks if you want to mount folders into containers |
+|| 3 | Writes Hermes config file (`~/.hermes/config.yaml`) |
+|| 4 | Starts Hermes Dashboard (port 9119) |
+|| 5 | Starts Hermes API Server (port 8642) |
+|| 6 | Starts MySQL 8.0 + syncs state.db + creates dump |
+|| 7 | Shows running containers and URLs |
 
 Total time: ~90 seconds. No manual steps.
 
@@ -51,13 +50,13 @@ Total time: ~90 seconds. No manual steps.
 ## Architecture
 
 ```
-  +------------------+    +------------------+    +--------------------+
-  |   Hermes         |    |  Hermes          |    |    Open WebUI      |
-  |   API Server     |    |  Dashboard       |    |    Chat Interface  |
-  |   :8642          |    |  :9119           |    |    :3000           |
-  +--------+---------+    +--------+---------+    +---------+----------+
-           |                       |                         |
-           +-----------------------+-------+-----------------+
+  +------------------+    +------------------+
+  |   Hermes         |    |  Hermes          |
+  |   API Server     |    |  Dashboard       |
+  |   :8642          |    |  :9119           |
+  +--------+---------+    +--------+---------+
+           |                       |
+           +-----------+-----------+
                                            |
                                    +-------+--------+
                                    |    MySQL 8.0   |
@@ -76,10 +75,9 @@ Total time: ~90 seconds. No manual steps.
 
 | Component | Description |
 |-----------|-------------|
-| Hermes API Server | Core AI agent, OpenAI-compatible API on port 8642 |
-| Hermes Dashboard | Web-based dashboard for monitoring at port 9119 |
-| Open WebUI | Full chat interface at port 3000 |
-| MySQL 8.0 | Persistent session and memory storage |
+|| Hermes API Server | Core AI agent, OpenAI-compatible API on port 8642 |
+|| Hermes Dashboard | Web-based dashboard for monitoring at port 9119 |
+|| MySQL 8.0 | Persistent session and memory storage |
 | Automated Dump | `mysqldump` creates a full backup on every start |
 | Sub-agent Support | Hermes can spawn autonomous sub-agents for parallel work |
 | Recovery Ready | Reverse-sync restores everything from a single SQL dump |
@@ -116,10 +114,9 @@ hermes_start.bat
 ```
 
 That's it. After a few minutes you have:
-- Hermes API at http://localhost:8642
-- Hermes Dashboard at http://localhost:9119
-- Open WebUI at http://localhost:3000
-- Automated MySQL backup at `backups\hermes_dump.sql`
+|- Hermes API at http://localhost:8642
+|- Hermes Dashboard at http://localhost:9119
+|- Automated MySQL backup at `backups\hermes_dump.sql`
 
 ---
 
