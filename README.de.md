@@ -9,12 +9,12 @@
 </p>
 
 <p align="center">
-  [![Docker](https://img.shields.io/badge/docker-bereit-2496ED?logo=docker&logoColor=white)](https://www.docker.com)
-  [![MySQL](https://img.shields.io/badge/mysql-8.0-4479A1?logo=mysql&logoColor=white)](https://www.mysql.com)
-  [![WSL](https://img.shields.io/badge/wsl-2-0E7A0D?logo=linux&logoColor=white)](https://learn.microsoft.com/de-de/windows/wsl/)
-  [![Hermes Agent](https://img.shields.io/badge/hermes-agent-8B5CF6?logo=python&logoColor=white)](https://hermes-agent.nousresearch.com)
-  [![Lizenz](https://img.shields.io/badge/Lizenz-Apache%202.0-blue)](LICENSE)
-  [![GitHub](https://img.shields.io/badge/GitHub-delkim2003/hermes--install-181717?logo=github&logoColor=white)](https://github.com/delkim2003/hermes-install)
+  <a href="https://www.docker.com"><img src="https://img.shields.io/badge/docker-bereit-2496ED?logo=docker&logoColor=white" alt="Docker"/></a>
+  <a href="https://www.mysql.com"><img src="https://img.shields.io/badge/mysql-8.0-4479A1?logo=mysql&logoColor=white" alt="MySQL"/></a>
+  <a href="https://learn.microsoft.com/de-de/windows/wsl/"><img src="https://img.shields.io/badge/wsl-2-0E7A0D?logo=linux&logoColor=white" alt="WSL"/></a>
+  <a href="https://hermes-agent.nousresearch.com"><img src="https://img.shields.io/badge/hermes-agent-8B5CF6?logo=python&logoColor=white" alt="Hermes Agent"/></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/Lizenz-Apache%202.0-blue" alt="Lizenz"/></a>
+  <a href="https://github.com/delkim2003/hermes-install"><img src="https://img.shields.io/badge/GitHub-delkim2003/hermes--install-181717?logo=github&logoColor=white" alt="GitHub"/></a>
 </p>
 
 ---
