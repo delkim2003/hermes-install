@@ -21,17 +21,35 @@ vorherigen auf.
 
 ---
 
-```mermaid
-flowchart TD
-    A["Windows installieren"] --> B["WSL aktivieren"]
-    B --> C["Docker Desktop installieren"]
-    C --> D["GitHub Repo klonen"]
-    D --> E["Hermes Docker-Image bauen"]
-    E --> F["Config anpassen"]
-    F --> G["Erster Start via Batch"]
-    G --> H["Alles testen"]
-    H --> I["MySQL Sync prüfen"]
-    I --> J["System ist bereit"]
+```
+┌──────────────────────────────────────────────────────────────┐
+│                        Windows 10/11                         │
+│                                                              │
+│   ┌─────────────┐    ┌──────────────┐    ┌───────────────┐  │
+│   │ Hermes API  │    │  Dashboard   │    │  Open WebUI   │  │
+│   │ Port 8642   │    │  Port 9119   │    │  Port 3000    │  │
+│   └──────┬──────┘    └──────┬───────┘    └───────┬───────┘  │
+│          │                  │                     │          │
+│          └──────────────────┼─────────────────────┘          │
+│                             │                                │
+│                    ┌────────▼────────┐                       │
+│                    │  Docker Network │                       │
+│                    │   hermes-net    │                       │
+│                    └────────┬────────┘                       │
+│                             │                                │
+│                    ┌────────▼────────┐      ┌─────────────┐  │
+│                    │     MySQL       │      │  Gemountete  │  │
+│                    │  hermes-agent-  │      │  Laufwerke   │  │
+│                    │     mysql       │      │  /mnt/data   │  │
+│                    │    Port 3306    │      └─────────────┘  │
+│                    └────────┬────────┘                       │
+│                             │                                │
+│                    ┌────────▼────────┐                       │
+│                    │   hermes_dump   │                       │
+│                    │ D:\hermes-db-   │                       │
+│                    │ backup\         │                       │
+│                    └─────────────────┘                       │
+└──────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -72,6 +90,7 @@ Ausgabe sollte zeigen:
 dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
 dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
 ```
+
 Danach **Windows NEU STARTEN**, dann `wsl --install -d Ubuntu` wiederholen.
 
 ---
@@ -123,15 +142,21 @@ Muss eine leere Liste anzeigen (kein Fehler).
 
 **Dauer: ~2 Minuten**
 
-Das Repository enthält alles Nötige: Start-Batch, Sync-Script, Anleitungen.
-
 ```powershell
 cd D:\
 git clone https://github.com/delkim2003/hermes-install.git hermes
 cd D:\hermes
 ```
 
-**Ergebnis:** Ordner `D:\hermes\` mit allen Installationsdateien.
+**Ergebnis:** Ordner `D:\hermes\` mit allen Installationsdateien:
+
+| Datei | Beschreibung |
+|-------|-------------|
+| `INSTALLATION.md` | Diese Anleitung |
+| `WIEDERHERSTELLUNG.md` | Notfall-Wiederherstellung |
+| `hermes_start.bat` | Start-Batch für den täglichen Betrieb |
+| `mysql_sync.py` | Synchronisation state.db ↔ MySQL |
+| `.gitignore` | Schützt sensible Dateien |
 
 ---
 
@@ -139,27 +164,20 @@ cd D:\hermes
 
 **Dauer: ~10-20 Minuten (abhängig von Internetgeschwindigkeit)**
 
-Das Hermes-Image wird von Grund auf gebaut. Einmaliger Vorgang.
-
-**In WSL:**
-
 ```bash
-cd /mnt/d/hermes
-docker build -t hermes-agent:latest .
+wsl cd /mnt/d/hermes && docker build -t hermes-agent:latest .
 ```
-
-Oder wenn das Image von einer anderen Quelle kommt (z. B. Backup oder Download), entsprechend bereitstellen.
 
 Ausgabe sollte am Ende zeigen:
 ```
 => => naming to docker.io/library/hermes-agent:latest
 ```
 
-**Fehlerbehebung:** Falls kein Dockerfile vorhanden ist, muss vorher ein Hermes-Agent-Setup her. Lade den Hermes Agent vom offiziellen Repository:
+**Falls kein Dockerfile im Repo ist** (weil Hermes Agent aktualisiert wurde):
 
 ```bash
-git clone https://github.com/nousresearch/hermes-agent.git /tmp/hermes
-docker build -t hermes-agent:latest /tmp/hermes
+wsl git clone https://github.com/nousresearch/hermes-agent.git /tmp/hermes
+wsl docker build -t hermes-agent:latest /tmp/hermes
 ```
 
 ---
@@ -173,24 +191,22 @@ docker build -t hermes-agent:latest /tmp/hermes
 Öffne `D:\hermes\hermes_start.bat` im Editor und passe diese Variablen an:
 
 ```batch
-:: === KUNDENSPEZIFISCHE ANPASSUNGEN ===
-set "API_KEY=mein-sicherer-api-key"
-set "CPASS=mein-cryptomator-passwort"
-set "MPASS=mein-mysql-root-passwort"
-set "PROVIDER=openrouter"
-set "MODEL=anthropic/claude-sonnet-4"
-set "WEBUI_NAME=Meine Firma - Hermes"
+set "API_KEY=mein-sicherer-api-key"      :: Beliebiges Passwort
+set "MPASS=mein-mysql-root-passwort"     :: MySQL Passwort (frei wählbar)
+set "PROVIDER=openrouter"                :: KI-Anbieter
+set "MODEL=anthropic/claude-sonnet-4"    :: KI-Modell
+set "WEBUI_NAME=Meine Firma - Hermes"   :: Open WebUI Titel
 ```
 
-**Erklärung:**
-| Variable | Beschreibung |
-|----------|-------------|
-| `API_KEY` | Beliebiges Passwort für den Hermes-API-Zugriff (Open WebUI braucht das) |
-| `CPASS` | Cryptomator-Vault-Passwort (falls verwendet) |
-| `MPASS` | MySQL-Root-Passwort für die Datenbank |
-| `PROVIDER` | Z. B. `openrouter`, `anthropic`, `openai` (je nach Anbieter) |
-| `MODEL` | Das KI-Modell z. B. `anthropic/claude-sonnet-4` oder `gpt-4o` |
-| `WEBUI_NAME` | Anzeigename in Open WebUI oben links |
+**Erklärung der Variablen:**
+
+| Variable | Pflicht | Beschreibung |
+|----------|---------|-------------|
+| `API_KEY` | ✅ | Beliebiges Passwort für den Hermes-API-Zugriff. Open WebUI braucht es zur Verbindung. |
+| `MPASS` | ✅ | MySQL Root-Passwort. Wird für den Datenbank-Container und den Dump gebraucht. |
+| `PROVIDER` | ✅ | Dein KI-Anbieter: `openrouter`, `anthropic`, `openai`, `deepseek` oder `custom`. |
+| `MODEL` | ✅ | Das KI-Modell, z.B. `anthropic/claude-sonnet-4`, `gpt-4o` oder `deepseek-v4-flash`. |
+| `WEBUI_NAME` | ❌ | Anzeigename in Open WebUI (oben links in der Leiste). |
 
 **Mehrere Konfigurationen:** Lege einfach mehrere Batch-Dateien an:
 - `hermes_kunde1_start.bat`
@@ -198,40 +214,95 @@ set "WEBUI_NAME=Meine Firma - Hermes"
 
 Jede mit eigenem API-Key, Passwort und Modell.
 
----
-
-### Schritt 7: Cryptomator Vault vorbereiten (optional)
-
-**Dauer: ~15 Minuten**
-
-Cryptomator verschlüsselt sensible Daten (Kundenprojekte, Dokumente). **Nicht zwingend nötig**, aber für geschäftliche Nutzung empfohlen.
-
-1. Cryptomator installieren: https://cryptomator.org/
-2. Vault auf Google Drive oder OneDrive anlegen:
-   - Cryptomator öffnen → "Neuen Tresor anlegen"
-   - Speicherort: z. B. Google Drive Ordner
-   - Namen: z. B. `Hermes-Vault`
-   - Sicheres Passwort festlegen (entspricht `CPASS` in der Batch)
-3. Das Vault mit Google Drive syncen (Google Drive App installieren)
-4. In WSL wird das Vault per `cryptomator-entry.sh` automatisch entsperrt
+**Wichtig:** Dein API-Key für den KI-Anbieter (z.B. OpenRouter) muss separat in einer
+Umgebungsvariable gesetzt oder in der `config.yaml` hinterlegt werden. Siehe Schritt 8.
 
 ---
 
-### Schritt 8: Hermes-Config vorbereiten
+### Schritt 7: Laufwerke konfigurieren (optional)
 
-**Dauer: ~5 Minuten**
+**Dauer: ~2 Minuten**
 
-Falls `%USERPROFILE%\.hermes\config.yaml` noch nicht existiert, legt die Batch sie beim ersten Start selbst an. Für spezifische Anpassungen:
+Beim ersten Start der Batch fragt sie, ob du zusätzliche Ordner in die Container mounten willst:
+
+```
+Moechtest du Ordner in den Container mounten? (j/n): j
+Pfad eingeben (z.B. D:\Projekte): D:\Kundenprojekte
+```
+
+Der gemountete Ordner ist dann im Hermes-Container unter `/mnt/data/` verfügbar.
+Hermes kann dort Dateien lesen und schreiben.
+
+**Tipp:** Wenn der Kunde Projekte oder Vorlagen auf einem separaten Laufwerk hat,
+hier den Pfad angeben. Muss nicht sein – Hermes läuft auch ohne.
+
+---
+
+### Schritt 8: Hermes-Setup und Provider einrichten
+
+**Dauer: ~10 Minuten**
+
+**A) Provider-API-Key setzen**
+
+Hermes braucht einen gültigen API-Key für deinen KI-Anbieter. Setze ihn als
+Windows-Umgebungsvariable:
+
+```powershell
+:: Für OpenRouter
+setx HERMES_PROVIDER_OVERRIDE "openrouter"
+setx HERMES_MODEL_OVERRIDE "anthropic/claude-sonnet-4"
+
+:: API-Key für den Anbieter setzen
+setx OPENROUTER_API_KEY "sk-or-v1-dein-echter-key"
+
+:: Alternativ: Direkt den Hermes-API-Key setzen
+setx HERMES_API_KEY "dein-sicherer-api-key"
+
+:: PowerShell neu starten oder CMD neu öffnen nach setx
+```
+
+**B) Oder per Config-Datei (Batch macht das automatisch)**
+
+Die Batch erstellt beim Start automatisch die Datei `%USERPROFILE%\.hermes\config.yaml`:
 
 ```yaml
-# %USERPROFILE%\.hermes\config.yaml
 provider: openrouter
 model: anthropic/claude-sonnet-4
-api_key: mein-sicherer-api-key
+api_key: dein-sicherer-api-key
 tools:
   - terminal
   - web_search
   - file
+  - browser
+  - vision
+```
+
+Du kannst die Datei nach dem ersten Start manuell erweitern, z.B. mit:
+
+```yaml
+# Custom Provider hinzufügen
+custom_providers:
+  - name: mein-ollama
+    base_url: http://localhost:11434/v1
+    api_key: dummy
+```
+
+**C) Skills aktivieren**
+
+Nach dem ersten Start in einer Hermes-Session:
+
+```
+Lade das hermes-agent Skill mit skill_view(name='hermes-agent')
+```
+
+Oder direkt per Terminal (im Hermes-Container):
+
+```bash
+hermes skill enable test-driven-development
+hermes skill enable systematic-debugging
+hermes skill enable plan
+hermes skill enable workspace-reconnaissance
+hermes skill enable project-discovery
 ```
 
 ---
@@ -240,26 +311,25 @@ tools:
 
 ### Schritt 9: System starten
 
-**Dauer: ~5 Minuten (beim ersten Mal länger wegen Image-Pull)**
+**Dauer: ~5 Minuten (beim ersten Mal länger wegen MySQL-Image-Pull)**
 
 1. Docker Desktop starten (falls nicht schon)
-2. Als Administrator: `D:\hermes\hermes_start.bat` ausführen
-   - **Oder** einfach Doppelklick auf die Batch-Datei
+2. `D:\hermes\hermes_start.bat` ausführen (Doppelklick oder als Administrator)
 3. Die Batch startet automatisch alle Container in dieser Reihenfolge:
 
 ```
-[1/9] Docker-Netzwerk prüfen       → hermes-net
-[2/9] Cryptomator Vault entsperren → optional
-[3/9] Dashboard starten            → Port 9119
-[4/9] API Server starten           → Port 8642
-[5/9] Open WebUI starten           → Port 3000
-[6/9] API Server patchen           → Model Support
-[7/9] MySQL Container starten      → Port 3306
-[8/9] state.db -> MySQL syncen     → Dump auf D:\
-[9/9] Zusammenfassung
+[1/8] Docker-Netzwerk      → hermes-net anlegen
+[2/8] Laufwerke konfig.    → Optional: Ordner mounten
+[3/8] Config erstellen     → %USERPROFILE%\.hermes\config.yaml
+[4/8] Dashboard starten    → Port 9119
+[5/8] API Server starten   → Port 8642
+[6/8] Open WebUI starten   → Port 3000
+[7/8] MySQL + Sync + Dump  → DB, Sync, Backup
+[8/8] Zusammenfassung
 ```
 
-**Beim ersten Start** muss MySQL das Image herunterladen (~450 MB). Das dauert ~2 Minuten. Die Batch wartet automatisch bis MySQL bereit ist.
+**Beim ersten Start** muss MySQL das Image herunterladen (~450 MB).
+Das dauert ~2 Minuten. Die Batch wartet automatisch bis MySQL bereit ist.
 
 ---
 
@@ -280,14 +350,21 @@ Nach erfolgreichem Batch-Durchlauf:
 curl http://localhost:8642/v1/models
 ```
 
-Sollte eine Liste mit Modellen zurückgeben (z. B. `deepseek-v4-flash`).
+Sollte eine Liste mit Modellen zurückgeben.
 
 **Open WebUI Anmeldung:**
-- Benutzername: beliebig wählbar (beim ersten Besuch)
-- Oder falls bereits registriert: anmelden
+- Beim ersten Besuch: Registrierung (Benutzername + Passwort frei wählbar)
+- Bei bestehendem Konto: Einloggen
+- Oben links sollte der konfigurierte `WEBUI_NAME` stehen
 
 **Dashboard Check:**
-- Sollte "running" oder "healthy" zeigen
+- Öffne http://localhost:9119
+- Sollte den Hermes-Dashboard mit Status "running" oder "healthy" zeigen
+
+**Erste Chat-Nachricht:**
+1. Open WebUI öffnen
+2. Neuen Chat starten
+3. Text eingeben → Hermes sollte antworten
 
 ---
 
@@ -296,16 +373,16 @@ Sollte eine Liste mit Modellen zurückgeben (z. B. `deepseek-v4-flash`).
 **Dauer: ~2 Minuten**
 
 ```powershell
-docker exec hermes-agent-mysql mysql -uroot -pMEIN_PASSWORT hermes -e "SELECT COUNT(*) as sessions FROM sessions"
+docker exec hermes-agent-mysql mysql -uroot -pDEIN_PASSWORT hermes -e "SELECT COUNT(*) as sessions FROM sessions"
 ```
 
-Erwartet: Anzahl der importierten Sessions (kann 0 sein bei Erstinstallation, mehr nach Nutzung).
+Erwartet: Anzahl der Sessions (0 bei Erstinstallation, mehr nach Nutzung).
 
 ```powershell
-docker exec hermes-agent-mysql mysql -uroot -pMEIN_PASSWORT hermes -e "SELECT COUNT(*) as messages FROM messages"
+docker exec hermes-agent-mysql mysql -uroot -pDEIN_PASSWORT hermes -e "SELECT COUNT(*) as messages FROM messages"
 ```
 
-Erwartet: 0 bei frischer Installation, sonst Anzahl.
+Erwartet: 0 bei Erstinstallation, sonst Anzahl.
 
 ```powershell
 dir D:\hermes-db-backup\
@@ -323,6 +400,8 @@ Sollte eine `hermes_dump.sql` enthalten.
 2. `D:\hermes\hermes_start.bat` ausführen
 3. Nach ~2 Minuten ist alles bereit
 
+**Tipp:** Erstelle eine Desktop-Verknüpfung zu `D:\hermes\hermes_start.bat`.
+
 ---
 
 ### Backup-Strategie
@@ -330,11 +409,12 @@ Sollte eine `hermes_dump.sql` enthalten.
 | Was | Wann | Wohin |
 |-----|------|-------|
 | MySQL-Dump | **Jeder Start** automatisch | `D:\hermes-db-backup\hermes_dump.sql` |
-| state.db | Jeder Start (lebt in `~/.hermes/`) | Inhalt wird nach MySQL gesynct |
 | Hermes-Config | Manuell bei Änderung | `%USERPROFILE%\.hermes\` |
-| Cryptomator-Vault | Via Google Drive Sync | Cloud |
+| Docker-Volumes | Manuell (alle paar Monate) | `docker volume backup` |
 
-**Wichtigster Backup-Punkt:** Der MySQL-Dump auf `D:\hermes-db-backup\` enthält dein komplettes Hermes-Gehirn (Sessions, Messages, Memory).
+**Wichtigster Backup-Punkt:** Der MySQL-Dump auf `D:\hermes-db-backup\` enthält
+dein komplettes Hermes-Gehirn (Sessions, Messages, Memory). Ohne diesen Dump
+gibt es nach einem Totalausfall keine Wiederherstellung der Chats.
 
 ---
 
@@ -344,7 +424,7 @@ Sollte eine `hermes_dump.sql` enthalten.
 - Der `hermes-db-backup`-Ordner enthält sensible Chat-Verläufe
 - Exportiere die Batch nur ohne die Passwort-Zeilen, wenn du sie teilst
 - Dein Hermes läuft **komplett lokal** – keine Daten verlassen dein Netzwerk
-- Nur der API-Provider (z. B. OpenRouter) sieht deine KI-Anfragen
+- Nur die KI-Anfragen gehen an deinen API-Provider (OpenRouter, Anthropic, etc.)
 
 ---
 
@@ -363,20 +443,24 @@ docker logs hermes-agent-mysql
 
 ### MySQL Sync schlägt fehl
 ```powershell
-docker exec -e MYSQL_HOST=hermes-agent-mysql -e MYSQL_PASS=MEIN_PASSWORT hermes-agent python3 /opt/data/home/scripts/mysql_sync.py
+docker exec -e MYSQL_HOST=hermes-agent-mysql -e MYSQL_PASS=DEIN_PASSWORT hermes-agent python3 /opt/data/home/scripts/mysql_sync.py
 ```
 
-### Cryptomator kann nicht entsperren
-→ Prüfen ob `D:\00_AGENCY_CORE\Scripts\cryptomator-entry.sh` existiert und Pfade korrekt sind
+### API Server gibt keine Models zurück
+→ Prüfe ob `%USERPROFILE%\.hermes\config.yaml` existiert und `provider`/`model` gesetzt sind
+
+### Open WebUI zeigt "No model selected"
+→ Oben links in Open WebUI: Modell auswählen (es sollte dein konfiguriertes Modell da sein)
+→ Falls nicht: API Server neustarten: `docker restart hermes-agent`
 
 ---
 
 ## Nächste Schritte nach der Installation
 
-- [ ] Open WebUI mit Kunden-Branding einrichten (Logo, Name)
-- [ ] API-Provider konfigurieren (OpenRouter, Anthropic, etc.)
-- [ ] Chron-Jobs einrichten für regelmäßige Tasks
-- [ ] Skills anpassen für die Branche des Kunden
-- [ ] Erste Test-Konversation führen
-- [ ] Kunde in die Bedienung einweisen (Dashboard, Open WebUI)
+- [ ] Open WebUI mit Kunden-Branding einrichten (Logo, Name über `WEBUI_NAME`)
+- [ ] API-Provider-Key in Umgebungsvariable setzen (z.B. `OPENROUTER_API_KEY`)
+- [ ] Erste Test-Konversation führen – Hermes sollte antworten
+- [ ] Skills für die Branche des Kunden aktivieren
 - [ ] Desktop-Verknüpfung für die Batch erstellen
+- [ ] Wiederherstellungs-Anleitung ausdrucken und ins Handbuch legen
+- [ ] `D:\hermes-db-backup\` extern sichern (USB-Stick, NAS, Cloud)

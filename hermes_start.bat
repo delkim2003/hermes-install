@@ -6,19 +6,21 @@ setlocal enabledelayedexpansion
 :: ============================================
 :: KUNDENSPEZIFISCHE KONFIGURATION
 :: ============================================
-:: Passe diese Werte vor dem ersten Start an!
+:: Vor dem ersten Start anpassen!
 :: ============================================
 
-set "API_KEY=dein-api-key-hier"      :: Beliebiges Passwort für den API-Zugriff
-set "CPASS=dein-cryptomator-passwort"  :: Cryptomator Vault Passwort (optional)
-set "MPASS=dein-mysql-passwort"        :: MySQL Root-Passwort (frei wählbar)
-set "PROVIDER=openrouter"             :: KI-Anbieter (openrouter, anthropic, openai)
+set "API_KEY=dein-api-key-hier"       :: Beliebiges Passwort (frei waehlbar)
+set "MPASS=dein-mysql-passwort"       :: MySQL Root-Passwort (frei waehlbar)
+set "PROVIDER=openrouter"             :: KI-Anbieter: openrouter, anthropic, openai, deepseek
 set "MODEL=anthropic/claude-sonnet-4" :: KI-Modell
 set "WEBUI_NAME=Meine Firma - Hermes" :: Anzeigename in Open WebUI
 
 :: ============================================
 :: ENDE KONFIGURATION
 :: ============================================
+
+:: REPO_ROOT = Pfad in dem diese Batch liegt
+set "REPO_ROOT=%~dp0"
 
 set "NAME=hermes-agent"
 set "OWUI=open-webui"
@@ -28,29 +30,50 @@ echo    Hermes Agent - Vollstart
 echo ======================================
 echo.
 
-:: === 1/9  Docker-Netzwerk ===
-echo [1/9] Docker-Netzwerk prufen...
+:: === 1/8  Docker-Netzwerk ===
+echo [1/8] Docker-Netzwerk prüfen...
 docker network inspect hermes-net >nul 2>&1 && (
     echo    Netzwerk existiert bereits.
 ) || (
     docker network create hermes-net >nul && echo    Netzwerk angelegt.
 )
+echo.
 
-:: === 2/9  Cryptomator Vault (optional) ===
-echo [2/9] Cryptomator Vault entsperren...
-if exist /agency_core/Scripts/cryptomator-entry.sh (
-    docker run --rm -it ^
-        -v /opt/data:/opt/data ^
-        -v /agency_core/Scripts/cryptomator-entry.sh:/entry.sh ^
-        --entrypoint /bin/sh ^
-        alpine:latest ^
-        /entry.sh "%CPASS%"
+:: === 2/8  Laufwerke konfigurieren ===
+echo [2/8] Zusaetzliche Laufwerke in Container mounten?
+set "MOUNT_VARS="
+set /p ADD_MOUNT="Pfad eingeben (Enter = keins, z.B. D:\Projekte): "
+if not "!ADD_MOUNT!"=="" (
+    echo    Hinweis: Alle Laufwerke werden unter /mnt/ im Container verfuegbar sein.
+    set "MOUNT_VARS=-v "!ADD_MOUNT!:/mnt/data""
+    echo    Mount: !ADD_MOUNT! -> /mnt/data
 ) else (
-    echo    Kein Cryptomator-Script gefunden, ueberspringe.
+    echo    Keine zusaetzlichen Laufwerke.
 )
+echo.
 
-:: === 3/9  Dashboard ===
-echo [3/9] Dashboard starten...
+:: === 3/8  Hermes-Config erstellen ===
+echo [3/8] Hermes-Config vorbereiten...
+if not exist "%USERPROFILE%\.hermes" mkdir "%USERPROFILE%\.hermes"
+(
+echo # Hermes Agent Config
+echo # Automatisch erstellt am %DATE% %TIME%
+echo.
+echo provider: %PROVIDER%
+echo model: %MODEL%
+echo api_key: %API_KEY%
+echo tools:
+echo   - terminal
+echo   - web_search
+echo   - file
+echo   - browser
+echo   - vision
+) > "%USERPROFILE%\.hermes\config.yaml"
+echo    Config geschrieben: %USERPROFILE%\.hermes\config.yaml
+echo.
+
+:: === 4/8  Dashboard ===
+echo [4/8] Dashboard starten...
 docker rm -f hermes-dashboard >nul 2>&1
 docker run -d --restart=unless-stopped --network=hermes-net ^
     --name=hermes-dashboard -h hermes-dashboard ^
@@ -59,25 +82,27 @@ docker run -d --restart=unless-stopped --network=hermes-net ^
     --label "com.centurylinklabs.watchtower.enable=false" ^
     hermes-agent:latest ^
     hermes dashboard --host 0.0.0.0 --port 9119
+echo.
 
-:: === 4/9  API Server ===
-echo [4/9] API Server starten...
+:: === 5/8  API Server ===
+echo [5/8] API Server starten...
 docker rm -f %NAME% >nul 2>&1
 docker run -d --restart=unless-stopped --network=hermes-net ^
     --name=%NAME% -h %NAME% ^
     -v "%USERPROFILE%\.hermes:/root/.hermes" ^
-    -v /opt/data:/opt/data ^
     -e HERMES_PROVIDER_OVERRIDE="%PROVIDER%" ^
     -e HERMES_MODEL_OVERRIDE="%MODEL%" ^
     -e HERMES_API_KEY="%API_KEY%" ^
+    %MOUNT_VARS% ^
     -p 8642:8642 ^
     -p 8641:8641 ^
     --label "com.centurylinklabs.watchtower.enable=false" ^
     hermes-agent:latest ^
     hermes api-server --host 0.0.0.0 --port 8642
+echo.
 
-:: === 5/9  Open WebUI ===
-echo [5/9] Open WebUI starten...
+:: === 6/8  Open WebUI ===
+echo [6/8] Open WebUI starten...
 docker rm -f %OWUI% >nul 2>&1
 docker run -d --restart=unless-stopped --network=hermes-net ^
     --name=%OWUI% -h %OWUI% ^
@@ -87,21 +112,12 @@ docker run -d --restart=unless-stopped --network=hermes-net ^
     -p 3000:8080 ^
     --label "com.centurylinklabs.watchtower.enable=false" ^
     ghcr.io/open-webui/open-webui:main
+echo.
 
-:: === 6/9  API-Server-Patch ===
-echo [6/9] Warte auf API-Server...
-set tries=0
-:wait_api
-timeout /t 2 /nobreak >nul
-docker exec %NAME% wget -qO- http://localhost:8642/v1/models >nul 2>&1
-if not !errorlevel! equ 0 (
-    set /a tries+=1
-    if !tries! lss 15 goto wait_api
-)
-echo    API-Server bereit.
+:: === 7/8  MySQL + Sync + Dump ===
+echo [7/8] MySQL Container starten...
 
-:: === 7/9  MySQL Container ===
-echo [7/9] MySQL Container starten...
+:: MySQL Container
 docker rm -f %NAME%-mysql >nul 2>&1
 docker run -d --restart=unless-stopped --network=hermes-net ^
     --name=%NAME%-mysql -h %NAME%-mysql ^
@@ -127,17 +143,12 @@ if !tries! lss 15 (
     echo    Warnung: MySQL nicht rechtzeitig erreichbar.
 )
 
-:: === 8/9  DB Sync + Dump ===
-echo [8/9] Hermes-DB nach MySQL syncen...
+:: Sync-Script in Container kopieren
+echo    Kopiere Sync-Script in den Container...
+docker exec %NAME% mkdir -p /opt/data/home/scripts
+docker cp "%REPO_ROOT%mysql_sync.py" %NAME%:/opt/data/home/scripts/mysql_sync.py
 
-:: Script kopieren falls nicht vorhanden
-docker exec %NAME% sh -c "test -f /opt/data/home/scripts/mysql_sync.py" >nul 2>&1
-if !errorlevel! neq 0 (
-    echo    Kopiere Sync-Script in den Container...
-    docker exec %NAME% mkdir -p /opt/data/home/scripts
-    docker cp mysql_sync.py %NAME%:/opt/data/home/scripts/mysql_sync.py
-)
-
+:: pymysql installieren und syncen
 echo    Installiere pymysql...
 docker exec %NAME% pip install pymysql -q 2>nul
 echo    Synchronisiere state.db nach MySQL...
@@ -154,8 +165,9 @@ docker exec %NAME%-mysql ^
     mysqldump -uroot -p%MPASS% --databases hermes ^
     --routines --triggers --single-transaction > "D:\hermes-db-backup\hermes_dump.sql"
 echo    Dump gespeichert: D:\hermes-db-backup\hermes_dump.sql
+echo.
 
-:: === 9/9  Zusammenfassung ===
+:: === 8/8  Zusammenfassung ===
 echo ======================================
 echo    ALLE DIENSTE GESTARTET
 echo ======================================
@@ -169,7 +181,11 @@ echo.
 echo    Container:
 docker ps --filter network=hermes-net --format "table {{.Names}}	{{.Status}}	{{.Ports}}"
 echo.
-echo    Zum Anschauen der Logs: docker logs ^<name^>
+echo    Zum Anschauen der Logs: docker logs <name>
 echo    Zum Stoppen: docker stop %NAME% %OWUI% hermes-dashboard
+echo.
+echo    Provider : %PROVIDER%
+echo    Modell   : %MODEL%
+if not "!ADD_MOUNT!"=="" echo    Mounts   : %ADD_MOUNT% -> /mnt/data
 
 endlocal

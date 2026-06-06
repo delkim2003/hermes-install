@@ -26,10 +26,12 @@ Hermes Agent – Komplett-Installation für Kunden
 Dieses Repository enthält alles, um **Hermes Agent** auf einem
 Windows-Kunden-System von Null an zu installieren – inklusive:
 
-- Docker-Container-Orchestrierung
-- MySQL-Datenbank-Sicherung
-- Automatischem Sync zwischen Hermes und MySQL
-- Notfall-Wiederherstellungsplan
+- Docker-Container-Orchestrierung (API, Dashboard, Open WebUI, MySQL)
+- **MySQL-Backup** deines gesamten Hermes-Gehirns (Sessions, Messages, Memory)
+- Automatischem Sync zwischen Hermes und MySQL bei jedem Start
+- Notfall-Wiederherstellungsplan für den Totalausfall
+- Individuelle Laufwerk-Mounts für Kundenprojekte
+- Eine einzige Batch-Datei für den täglichen Betrieb
 
 **Kein Cloud-Zwang, kein Vendor-Lock-in, alles läuft lokal.**
 
@@ -38,34 +40,27 @@ Windows-Kunden-System von Null an zu installieren – inklusive:
 ## System-Architektur
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│                        Windows 10/11                         │
-│                                                              │
-│   ┌─────────────┐    ┌──────────────┐    ┌───────────────┐  │
-│   │ Hermes API  │    │  Dashboard   │    │  Open WebUI   │  │
-│   │ Port 8642   │    │  Port 9119   │    │  Port 3000    │  │
-│   └──────┬──────┘    └──────┬───────┘    └───────┬───────┘  │
-│          │                  │                     │          │
-│          └──────────────────┼─────────────────────┘          │
-│                             │                                │
-│                    ┌────────▼────────┐                       │
-│                    │  Docker Network │                       │
-│                    │   hermes-net    │                       │
-│                    └────────┬────────┘                       │
-│                             │                                │
-│                    ┌────────▼────────┐                       │
-│                    │     MySQL       │                       │
-│                    │  hermes-agent-  │                       │
-│                    │     mysql       │                       │
-│                    │    Port 3306    │                       │
-│                    └────────┬────────┘                       │
-│                             │                                │
-│                    ┌────────▼────────┐                       │
-│                    │   hermes_dump   │                       │
-│                    │ D:\hermes-db-   │                       │
-│                    │ backup\         │                       │
-│                    └─────────────────┘                       │
-└──────────────────────────────────────────────────────────────┘
+                       Windows 10/11
+                            │
+     ┌──────────────────────┼──────────────────────┐
+     │                      │                      │
+  Hermes API            Dashboard             Open WebUI
+  Port 8642             Port 9119              Port 3000
+     │                      │                      │
+     └──────────────────────┼──────────────────────┘
+                            │
+                     Docker Network
+                     hermes-net
+                            │
+              ┌─────────────┼─────────────┐
+              │             │             │
+           MySQL       Gemountete     Config
+           Port 3306   Laufwerke      .hermes\
+              │        /mnt/data      config.yaml
+              │
+              ▼
+     D:\hermes-db-backup\
+     hermes_dump.sql
 ```
 
 ---
@@ -75,10 +70,10 @@ Windows-Kunden-System von Null an zu installieren – inklusive:
 So läuft die Sicherung deines Hermes-Gehirns:
 
 ```
-                        Normalbetrieb
+              Normalbetrieb (jeder Start)
 state.db ───Sync──▶ MySQL ──Dump──▶ D:\hermes-db-backup\hermes_dump.sql
 
-                      Wiederherstellung
+            Wiederherstellung (nach Totalausfall)
 D:\hermes-db-backup\hermes_dump.sql ──Restore──▶ MySQL ──Reverse-Sync──▶ state.db
 ```
 
@@ -93,7 +88,7 @@ Das reicht, weil der Dump beim nächsten Start automatisch neu erzeugt wird.
 :: 1. WSL installieren
 wsl --install -d Ubuntu
 
-:: 2. Docker Desktop installieren (von https://docker.com)
+:: 2. Docker Desktop installieren (https://docker.com)
 ::    → WSL Integration für Ubuntu aktivieren!
 
 :: 3. Repo klonen
@@ -103,12 +98,31 @@ git clone https://github.com/delkim2003/hermes-install.git hermes
 :: 4. Hermes-Image bauen
 wsl docker build -t hermes-agent:latest /mnt/d/hermes
 
-:: 5. Anpassen (API-Key, Passwörter, Modell)
+:: 5. Anpassen (API-Key, Passwort, Provider, Modell)
 notepad D:\hermes\hermes_start.bat
 
-:: 6. Starten
+:: 6. Starten (Doppelklick)
 D:\hermes\hermes_start.bat
 ```
+
+---
+
+## Was passiert beim Start?
+
+Die Batch `hermes_start.bat` macht alles automatisch in 8 Schritten:
+
+| Schritt | Was | Details |
+|---------|-----|---------|
+| **1/8** | Netzwerk | Docker-Netzwerk `hermes-net` anlegen |
+| **2/8** | Laufwerke | Optional: Ordner in Container mounten |
+| **3/8** | Config | `%USERPROFILE%\.hermes\config.yaml` erstellen |
+| **4/8** | Dashboard | Hermes Dashboard auf Port 9119 |
+| **5/8** | API Server | Hermes API auf Port 8642 |
+| **6/8** | Open WebUI | Chat-Oberfläche auf Port 3000 |
+| **7/8** | MySQL + Sync | Datenbank hochziehen + Sync + Dump |
+| **8/8** | Zusammenfassung | Alle Dienste und Status |
+
+Nach ~2 Minuten ist alles bereit zum Loslegen.
 
 ---
 
@@ -116,9 +130,9 @@ D:\hermes\hermes_start.bat
 
 | Datei | Beschreibung |
 |-------|-------------|
-| `INSTALLATION.md` | Schritt-für-Schritt-Installation von Windows Blank bis Hermes bereit |
+| `INSTALLATION.md` | Schritt-für-Schritt-Installation von Blank-Windows bis Hermes bereit |
 | `WIEDERHERSTELLUNG.md` | Notfall-Wiederherstellung nach Totalausfall |
-| `hermes_start.bat` | Start-Batch – Docker-Container orchestrieren und DB syncen |
+| `hermes_start.bat` | Start-Batch – Container orchestrieren + DB syncen |
 | `mysql_sync.py` | Synchronisation zwischen Hermes (SQLite) und MySQL |
 
 ---
@@ -139,10 +153,10 @@ D:\hermes\hermes_start.bat
 | Bereich | Status |
 |---------|--------|
 | Datenhaltung | **Komplett lokal** – kein Cloud-Sync |
-| Verschlüsselung | Cryptomator Vault (optional) |
 | Netzwerk | Docker-intern – nur localhost exponiert |
 | Passwörter | In der Batch-Datei konfigurierbar |
 | API-Zugriff | Per API-Key geschützt |
+| Laufwerk-Mounts | Optional, nur bei Bedarf |
 
 ---
 
@@ -160,7 +174,7 @@ D:\hermes\hermes_start.bat
 
 ## Wartung
 
-- **Matrix-Update:** Hermes-Image alle paar Monate neu bauen
+- **Image-Update:** Hermes-Image alle paar Monate neu bauen
 - **Dump-Sicherung:** Regelmäßig `D:\hermes-db-backup\` extern sichern
 - **Docker-Update:** Docker Desktop-Updates installieren
 - **Logs prüfen:** `docker logs hermes-agent` bei Problemen
