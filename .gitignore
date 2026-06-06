@@ -1,0 +1,36 @@
+# Hermes Datenbanken - nur lokal
+state.db
+*.sql
+*.dump
+*.db
+
+# Betriebssystem
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+# Konfiguration mit Secrets
+*.env
+.env.local
+config.local.yaml
+
+# Docker
+docker-compose.override.yml
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
