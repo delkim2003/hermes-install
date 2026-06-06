@@ -1,146 +1,112 @@
-# Hermes Agent – Komplette Installation auf einem Kunden-System
+# Hermes Agent – Complete Installation Guide
 
-Dieses Dokument beschreibt die **vollständige Erstinstallation** von Hermes Agent
-auf einem Windows-System. Folge der Reihenfolge – jeder Schritt baut auf dem
-vorherigen auf.
+This guide walks you through setting up **Hermes Agent** on a blank Windows system.  
+Follow the steps in order – each builds on the previous one.
 
----
-
-## Voraussetzungen
-
-| Anforderung | Mindestens | Empfohlen |
-|-------------|-----------|-----------|
-| Betriebssystem | Windows 10 Pro 22H2 | Windows 11 Pro |
-| Arbeitsspeicher | 16 GB RAM | 32 GB RAM |
-| Prozessor | 4 Kerne | 8+ Kerne |
-| Festplatte | 50 GB frei | 100+ GB SSD |
-| Internet | Ja (für Downloads) | 50+ Mbit/s |
-| CPU-Virtualisierung | Aktiviert (BIOS) | – |
-
-**Vorinstallierte Software (wird später eingerichtet):** Keine.
+**Estimated total time:** 30–45 minutes (mostly waiting for downloads).
 
 ---
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│                        Windows 10/11                         │
-│                                                              │
-│   ┌─────────────┐    ┌──────────────┐    ┌───────────────┐  │
-│   │ Hermes API  │    │  Dashboard   │    │  Open WebUI   │  │
-│   │ Port 8642   │    │  Port 9119   │    │  Port 3000    │  │
-│   └──────┬──────┘    └──────┬───────┘    └───────┬───────┘  │
-│          │                  │                     │          │
-│          └──────────────────┼─────────────────────┘          │
-│                             │                                │
-│                    ┌────────▼────────┐                       │
-│                    │  Docker Network │                       │
-│                    │   hermes-net    │                       │
-│                    └────────┬────────┘                       │
-│                             │                                │
-│                    ┌────────▼────────┐      ┌─────────────┐  │
-│                    │     MySQL       │      │  Gemountete  │  │
-│                    │  hermes-agent-  │      │  Laufwerke   │  │
-│                    │     mysql       │      │  /mnt/data   │  │
-│                    │    Port 3306    │      └─────────────┘  │
-│                    └────────┬────────┘                       │
-│                             │                                │
-│                    ┌────────▼────────┐                       │
-│                    │   hermes_dump   │                       │
-│                    │ D:\hermes-db-   │                       │
-│                    │ backup\         │                       │
-│                    └─────────────────┘                       │
-└──────────────────────────────────────────────────────────────┘
-```
+## Table of Contents
+
+- [Phase 1: Prerequisites](#phase-1-prerequisites)
+- [Phase 2: Repository & Image](#phase-2-repository--image)
+- [Phase 3: Configuration](#phase-3-configuration)
+- [Phase 4: First Start](#phase-4-first-start)
+- [Phase 5: Verification](#phase-5-verification)
+- [Phase 6: Daily Operation](#phase-6-daily-operation)
+- [Phase 7: Troubleshooting](#phase-7-troubleshooting)
 
 ---
 
-## Phase 1 – Grundsystem einrichten
+## Phase 1: Prerequisites
 
-### Schritt 1: WSL aktivieren
+### Step 1: Enable WSL 2
 
-**Dauer: ~5 Minuten**
+**Duration: ~5 minutes**
 
-Öffne **PowerShell als Administrator** und führe aus:
+Open **PowerShell as Administrator** and run:
 
 ```powershell
 wsl --install -d Ubuntu
 ```
 
-Nach dem Befehl:
-- System startet ggf. neu
-- Nach dem Neustart öffnet sich automatisch ein Ubuntu-Terminal
-- **Benutzername und Passwort für Ubuntu festlegen** (merken!)
-- Dies ist dein WSL-Linux-Benutzer, nicht dein Windows-Benutzer
+What happens:
+- Windows may restart once
+- After restart, an Ubuntu terminal opens automatically
+- **You must create a Linux username and password** – write these down!
+- This is your WSL user, not your Windows user
 
-**Prüfen ob erfolgreich:**
+**Verify:**
 
 ```powershell
 wsl -l -v
 ```
 
-Ausgabe sollte zeigen:
+Expected output:
 ```
   NAME      STATE           VERSION
 * Ubuntu    Running         2
 ```
 
-**Fehlerbehebung:** Falls `wsl` nicht gefunden wird, muss das Windows-Subsystem aktiviert werden:
+**If `wsl` is not found**, enable the Windows feature first:
 
 ```powershell
 dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
 dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
 ```
 
-Danach **Windows NEU STARTEN**, dann `wsl --install -d Ubuntu` wiederholen.
+Then **restart Windows** and run `wsl --install -d Ubuntu` again.
 
 ---
 
-### Schritt 2: Docker Desktop installieren
+### Step 2: Install Docker Desktop
 
-**Dauer: ~10 Minuten**
+**Duration: ~10 minutes**
 
-1. Lade Docker Desktop herunter: https://www.docker.com/products/docker-desktop/
-2. **Installiere Docker Desktop** (Standardeinstellungen übernehmen)
-3. Nach der Installation:
-   - Hake **"Use WSL 2 instead of Hyper-V"** an
-   - Docker Desktop startet automatisch
-   - Warte bis unten links "Engine running" steht
+1. Download Docker Desktop from: https://www.docker.com/products/docker-desktop/
+2. Run the installer (default settings are fine)
+3. During setup, check **"Use WSL 2 instead of Hyper-V"**
+4. After installation, Docker Desktop starts automatically
+5. Wait for the green "Engine running" indicator in the bottom-left corner
 
-**Prüfen ob erfolgreich:**
+**Verify:**
 
 ```powershell
 docker --version
 docker compose version
 ```
 
-Beide sollten eine Versionsnummer ausgeben, kein Fehler.
+Both should show version numbers, not errors.
 
-**Wichtig:** Docker Desktop muss nach jedem Windows-Neustart einmal manuell gestartet werden (oder als Autostart eingerichtet).
+**Important:** Docker Desktop must be started manually after each Windows reboot. You can enable auto-start in Docker Desktop → Settings → General → "Start Docker Desktop when you log in".
 
 ---
 
-### Schritt 3: Docker in WSL integrieren
+### Step 3: Enable WSL Integration in Docker
 
-**Dauer: ~2 Minuten**
+**Duration: ~2 minutes**
 
-Öffne Docker Desktop → Einstellungen (Zahnrad) → **Resources → WSL Integration**
+1. Open Docker Desktop
+2. Go to **Settings** (gear icon) → **Resources** → **WSL Integration**
+3. Toggle **ON** for **Ubuntu**
+4. Click **Apply & Restart**
 
-- Schalte den Schalter für **Ubuntu** ein
-- Klicke **Apply & Restart**
-
-**Prüfen ob erfolgreich:**
+**Verify:**
 
 ```powershell
 wsl docker ps
 ```
 
-Muss eine leere Liste anzeigen (kein Fehler).
+Should show an empty container list (no error).
 
 ---
 
-### Schritt 4: GitHub Repository klonen
+## Phase 2: Repository & Image
 
-**Dauer: ~2 Minuten**
+### Step 4: Clone the Repository
+
+**Duration: ~2 minutes**
 
 ```powershell
 cd D:\
@@ -148,312 +114,295 @@ git clone https://github.com/delkim2003/hermes-install.git hermes
 cd D:\hermes
 ```
 
-**Ergebnis:** Ordner `D:\hermes\` mit allen Installationsdateien:
+**Result:** Folder `D:\hermes\` with all installation files:
 
-| Datei | Beschreibung |
-|-------|-------------|
-| `INSTALLATION.md` | Diese Anleitung |
-| `WIEDERHERSTELLUNG.md` | Notfall-Wiederherstellung |
-| `hermes_start.bat` | Start-Batch für den täglichen Betrieb |
-| `mysql_sync.py` | Synchronisation state.db ↔ MySQL |
-| `.gitignore` | Schützt sensible Dateien |
+| File | Description |
+|------|-------------|
+| `hermes_start.bat` | One-click launcher for daily use |
+| `INSTALLATION.md` | This guide |
+| `RECOVERY.md` | Disaster recovery instructions |
+| `Dockerfile` | Build file for the Hermes container |
+| `mysql_sync.py` | Database synchronization script |
+| `.gitignore` | Protects sensitive files from Git |
 
 ---
 
-### Schritt 5: Hermes Docker-Image bauen
+### Step 5: Build the Hermes Docker Image
 
-**Dauer: ~10-20 Minuten (abhängig von Internetgeschwindigkeit)**
+**Duration: 10–20 minutes (depends on internet speed)**
 
 ```powershell
-:: Vom geklonten Repo aus (wenn Dockerfile vorhanden)
-docker build -t hermes-agent:latest D:\hermes
-
-:: Oder falls das Repo kein Dockerfile enthält:
-git clone https://github.com/nousresearch/hermes-agent.git C:\temp\hermes-agent
-docker build -t hermes-agent:latest C:\temp\hermes-agent
+cd D:\hermes
+docker build -t hermes-agent:latest .
 ```
+
+Docker downloads the Python base image (~120 MB) and installs Hermes Agent from PyPI.  
+You only need to do this once. After that, the image is cached locally.
+
+**Verify:**
+
+```powershell
+docker images hermes-agent
+```
+
+Expected output (versions may differ):
+```
+REPOSITORY      TAG       IMAGE ID       CREATED          SIZE
+hermes-agent    latest    a1b2c3d4e5f6   2 minutes ago    350 MB
+```
+
+**Tip:** When a new version of Hermes Agent is released, just re-run `docker build -t hermes-agent:latest .` to update.
 
 ---
 
-## Phase 2 – Konfiguration anpassen
+## Phase 3: Configuration
 
-### Schritt 6: Konfigurationsdateien vorbereiten
+### Step 6: Edit the Batch File
 
-**Dauer: ~5 Minuten**
+**Duration: ~5 minutes**
 
-Öffne `D:\hermes\hermes_start.bat` im Editor und passe diese Variablen an:
+Open `D:\hermes\hermes_start.bat` in Notepad and edit these 5 variables:
 
 ```batch
-set "API_KEY=mein-sicherer-api-key"      :: Beliebiges Passwort
-set "MPASS=mein-mysql-root-passwort"     :: MySQL Passwort (frei wählbar)
-set "PROVIDER=openrouter"                :: KI-Anbieter
-set "MODEL=anthropic/claude-sonnet-4"    :: KI-Modell
-set "WEBUI_NAME=Meine Firma - Hermes"   :: Open WebUI Titel
+set "API_KEY=change-me-to-a-secure-password"    -> Your own password (any text)
+set "MPASS=change-me-mysql-password"            -> MySQL root password (any text)
+set "PROVIDER=openrouter"                       -> Your AI provider
+set "MODEL=anthropic/claude-sonnet-4"           -> Your AI model
+set "WEBUI_NAME=My Company - Hermes"            -> Your company/project name
 ```
 
-**Erklärung der Variablen:**
+**Variable reference:**
 
-| Variable | Pflicht | Beschreibung |
-|----------|---------|-------------|
-| `API_KEY` | ✅ | Beliebiges Passwort für den Hermes-API-Zugriff. Open WebUI braucht es zur Verbindung. |
-| `MPASS` | ✅ | MySQL Root-Passwort. Wird für den Datenbank-Container und den Dump gebraucht. |
-| `PROVIDER` | ✅ | Dein KI-Anbieter: `openrouter`, `anthropic`, `openai`, `deepseek` oder `custom`. |
-| `MODEL` | ✅ | Das KI-Modell, z.B. `anthropic/claude-sonnet-4`, `gpt-4o` oder `deepseek-v4-flash`. |
-| `WEBUI_NAME` | ❌ | Anzeigename in Open WebUI (oben links in der Leiste). |
-| `DUMP_DIR` | ❌ | Pfad für MySQL-Dump-Backup. Standard: `D:\hermes-db-backup`. |
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `API_KEY` | ✅ Yes | Any password. Used for API authentication between Hermes and Open WebUI. |
+| `MPASS` | ✅ Yes | MySQL root password. Used for the database container and backups. |
+| `PROVIDER` | ✅ Yes | AI provider: `openrouter`, `anthropic`, `openai`, `deepseek`, or `custom` |
+| `MODEL` | ✅ Yes | Model name: `anthropic/claude-sonnet-4`, `gpt-4o`, `deepseek-v4-flash`, etc. |
+| `WEBUI_NAME` | ❌ No | Display name shown in Open WebUI (top-left corner). |
+| `DUMP_DIR` | ❌ No | Path for MySQL backup. Default: `D:\hermes-db-backup\` |
 
-**Mehrere Konfigurationen:** Lege einfach mehrere Batch-Dateien an:
-- `hermes_kunde1_start.bat`
-- `hermes_kunde2_start.bat`
+**On first run, you also need to set your provider's API key:**
 
-Jede mit eigenem API-Key, Passwort und Modell.
-
-**Wichtig:** Dein API-Key für den KI-Anbieter (z.B. OpenRouter) muss separat in einer
-Umgebungsvariable gesetzt oder in der `config.yaml` hinterlegt werden. Siehe Schritt 8.
-
----
-
-### Schritt 7: Laufwerke konfigurieren (optional)
-
-**Dauer: ~2 Minuten**
-
-Beim ersten Start der Batch fragt sie, ob du zusätzliche Ordner in die Container mounten willst:
-
-```
-Moechtest du Ordner in den Container mounten? (j/n): j
-Pfad eingeben (z.B. D:\Projekte): D:\Kundenprojekte
-```
-
-Der gemountete Ordner ist dann im Hermes-Container unter `/mnt/data/` verfügbar.
-Hermes kann dort Dateien lesen und schreiben.
-
-**Tipp:** Wenn der Kunde Projekte oder Vorlagen auf einem separaten Laufwerk hat,
-hier den Pfad angeben. Muss nicht sein – Hermes läuft auch ohne.
-
----
-
-### Schritt 8: Hermes-Setup und Provider einrichten
-
-**Dauer: ~10 Minuten**
-
-**A) Provider-API-Key setzen**
-
-Hermes braucht einen gültigen API-Key für deinen KI-Anbieter. Setze ihn als
-Windows-Umgebungsvariable:
+Your AI provider (OpenRouter, Anthropic, etc.) needs an API key for billing. Set it as a Windows environment variable:
 
 ```powershell
-:: Für OpenRouter
-setx HERMES_PROVIDER_OVERRIDE "openrouter"
-setx HERMES_MODEL_OVERRIDE "anthropic/claude-sonnet-4"
+:: For OpenRouter
+setx OPENROUTER_API_KEY "sk-or-...your-key-here"
 
-:: API-Key für den Anbieter setzen
-setx OPENROUTER_API_KEY "sk-or-v1-dein-echter-key"
+:: For Anthropic
+setx ANTHROPIC_API_KEY "sk-ant-...your-key-here"
 
-:: Alternativ: Direkt den Hermes-API-Key setzen
-setx HERMES_API_KEY "dein-sicherer-api-key"
-
-:: PowerShell neu starten oder CMD neu öffnen nach setx
+:: For OpenAI
+setx OPENAI_API_KEY "sk-...your-key-here"
 ```
 
-**B) Oder per Config-Datei (Batch macht das automatisch)**
-
-Die Batch erstellt beim Start automatisch die Datei `%USERPROFILE%\.hermes\config.yaml`:
-
-```yaml
-provider: openrouter
-model: anthropic/claude-sonnet-4
-api_key: dein-sicherer-api-key
-tools:
-  - terminal
-  - web_search
-  - file
-  - browser
-  - vision
-```
-
-Du kannst die Datei nach dem ersten Start manuell erweitern, z.B. mit:
-
-```yaml
-# Custom Provider hinzufügen
-custom_providers:
-  - name: mein-ollama
-    base_url: http://localhost:11434/v1
-    api_key: dummy
-```
-
-**C) Skills aktivieren**
-
-Nach dem ersten Start in einer Hermes-Session:
-
-```
-Lade das hermes-agent Skill mit skill_view(name='hermes-agent')
-```
-
-Oder direkt per Terminal (im Hermes-Container):
-
-```bash
-hermes skill enable test-driven-development
-hermes skill enable systematic-debugging
-hermes skill enable plan
-hermes skill enable workspace-reconnaissance
-hermes skill enable project-discovery
-```
+After running `setx`, close and reopen PowerShell, or restart your computer for the variable to take effect.
 
 ---
 
-## Phase 3 – Erster Start
+## Phase 4: First Start
 
-### Schritt 9: System starten
+### Step 7: Run the Batch File
 
-**Dauer: ~5 Minuten (beim ersten Mal länger wegen MySQL-Image-Pull)**
+**Duration: ~5 minutes (first run: +2 minutes for MySQL image pull)**
 
-1. Docker Desktop starten (falls nicht schon)
-2. `D:\hermes\hermes_start.bat` ausführen (Doppelklick oder als Administrator)
-3. Die Batch startet automatisch alle Container in dieser Reihenfolge:
+1. **Start Docker Desktop** (if not already running)
+2. **Double-click** `D:\hermes\hermes_start.bat`
+3. The batch will ask about additional drive mounts (press Enter to skip)
+4. Watch the progress – the batch runs through 8 steps:
 
 ```
-[1/8] Docker-Netzwerk      → hermes-net anlegen
-[2/8] Laufwerke konfig.    → Optional: Ordner mounten
-[3/8] Config erstellen     → %USERPROFILE%\.hermes\config.yaml
-[4/8] Dashboard starten    → Port 9119
-[5/8] API Server starten   → Port 8642
-[6/8] Open WebUI starten   → Port 3000
-[7/8] MySQL + Sync + Dump  → DB, Sync, Backup
-[8/8] Zusammenfassung
+[1/8] Docker Network         → Creates hermes-net
+[2/8] Optional mounts        → Your folders inside containers
+[3/8] Create config          → Writes %USERPROFILE%\.hermes\config.yaml
+[4/8] Dashboard              → Starts Hermes Dashboard on port 9119
+[5/8] API Server             → Starts Hermes API on port 8642
+[6/8] Open WebUI             → Starts chat UI on port 3000
+[7/8] MySQL + Sync + Dump    → Starts MySQL, syncs database, creates dump
+[8/8] Summary                → Shows all running services
 ```
 
-**Beim ersten Start** muss MySQL das Image herunterladen (~450 MB).
-Das dauert ~2 Minuten. Die Batch wartet automatisch bis MySQL bereit ist.
+**First-run notes:**
+- The MySQL container (~450 MB) is downloaded on first start – this takes ~2 minutes
+- The batch waits automatically for MySQL to be ready before proceeding
+- If a service fails to start, the batch continues with the remaining services
 
 ---
 
-### Schritt 10: Alles testen
+## Phase 5: Verification
 
-**Dauer: ~5 Minuten**
+### Step 8: Test Everything
 
-Nach erfolgreichem Batch-Durchlauf:
+**Duration: ~5 minutes**
 
-| Dienst | URL | Erwartet |
-|--------|-----|----------|
-| **Hermes API** | http://localhost:8642/v1/models | JSON mit Modell-Liste |
-| **Open WebUI** | http://localhost:3000 | Anmeldemaske |
-| **Dashboard** | http://localhost:9119 | Hermes Dashboard |
+After the batch finishes successfully:
 
-**API-Test:**
+| Service | URL | Expected Result |
+|---------|-----|-----------------|
+| **Hermes API** | http://localhost:8642/v1/models | JSON with model list |
+| **Hermes Dashboard** | http://localhost:9119 | Hermes status page |
+| **Open WebUI** | http://localhost:3000 | Login/register page |
+
+**API Test:**
 ```powershell
 curl http://localhost:8642/v1/models
 ```
 
-Sollte eine Liste mit Modellen zurückgeben.
+Should return a JSON array with your configured model.
 
-**Open WebUI Anmeldung:**
-- Beim ersten Besuch: Registrierung (Benutzername + Passwort frei wählbar)
-- Bei bestehendem Konto: Einloggen
-- Oben links sollte der konfigurierte `WEBUI_NAME` stehen
+**Open WebUI Login:**
+- First visit: Create an account (username + password – free choice)
+- You should see your configured `WEBUI_NAME` in the top-left corner
+- Select your model from the dropdown at the top of the chat
 
 **Dashboard Check:**
-- Öffne http://localhost:9119
-- Sollte den Hermes-Dashboard mit Status "running" oder "healthy" zeigen
+- Open http://localhost:9119
+- Should show the Hermes dashboard with service status
 
-**Erste Chat-Nachricht:**
-1. Open WebUI öffnen
-2. Neuen Chat starten
-3. Text eingeben → Hermes sollte antworten
+**Send a test message:**
+1. Go to Open WebUI (http://localhost:3000)
+2. Start a new chat
+3. Type "Hello" – Hermes should respond
 
 ---
 
-### Schritt 11: MySQL Sync prüfen
+### Step 9: Verify MySQL Backup
 
-**Dauer: ~2 Minuten**
+**Duration: ~2 minutes**
+
+Check that the database sync worked:
 
 ```powershell
-docker exec hermes-agent-mysql mysql -uroot -pDEIN_PASSWORT hermes -e "SELECT COUNT(*) as sessions FROM sessions"
+:: Count sessions in MySQL
+docker exec hermes-agent-mysql mysql -uroot -pYOUR_MPASS hermes -e "SELECT COUNT(*) AS sessions FROM sessions"
+
+:: Count messages in MySQL
+docker exec hermes-agent-mysql mysql -uroot -pYOUR_MPASS hermes -e "SELECT COUNT(*) AS messages FROM messages"
+
+:: Check the dump file exists
+dir %DUMP_DIR%
 ```
 
-Erwartet: Anzahl der Sessions (0 bei Erstinstallation, mehr nach Nutzung).
+Expected:
+- Sessions ≥ 0 (increases with use)
+- Messages ≥ 0 (increases with use)
+- `hermes_dump.sql` exists and is not empty
+
+---
+
+## Phase 6: Daily Operation
+
+### Daily Start
 
 ```powershell
-docker exec hermes-agent-mysql mysql -uroot -pDEIN_PASSWORT hermes -e "SELECT COUNT(*) as messages FROM messages"
+# 1. Start Docker Desktop (or it auto-starts)
+# 2. Run the batch
+D:\hermes\hermes_start.bat
 ```
 
-Erwartet: 0 bei Erstinstallation, sonst Anzahl.
+After ~2 minutes, all services are running.
+
+**Desktop shortcut (optional):**
+1. Right-click your desktop → New → Shortcut
+2. Location: `D:\hermes\hermes_start.bat`
+3. Name: "Hermes Agent"
+4. Optional: Right-click shortcut → Properties → Advanced → "Run as administrator"
+
+### Managing Containers
 
 ```powershell
-dir D:\hermes-db-backup\
+# View running services
+docker ps --filter network=hermes-net
+
+# View logs for a specific service
+docker logs hermes-agent
+
+# Stop all services (without running the batch)
+docker stop hermes-agent open-webui hermes-dashboard hermes-agent-mysql
 ```
 
-Sollte eine `hermes_dump.sql` enthalten.
+### Backup Strategy
+
+| What | When | Where |
+|------|------|-------|
+| **MySQL dump** | Every start (automatic) | `%DUMP_DIR%\hermes_dump.sql` |
+| **Hermes config** | Manually on changes | `%USERPROFILE%\.hermes\` |
+| **Docker volumes** | Manually (every few months) | `docker volume inspect hermes_mysql_data` |
+
+**External backup:** Copy `%DUMP_DIR%\hermes_dump.sql` to a USB drive or NAS regularly.  
+This single file contains all your sessions, messages, and memory.
 
 ---
 
-## Phase 4 – Produktivbetrieb
+## Phase 7: Troubleshooting
 
-### Täglicher Start
+### "Docker" is not recognized
 
-1. Docker Desktop starten (oder als Autostart einrichten)
-2. `D:\hermes\hermes_start.bat` ausführen
-3. Nach ~2 Minuten ist alles bereit
+→ Docker Desktop is not installed or not running.  
+Open Docker Desktop and wait for "Engine running."
 
-**Tipp:** Erstelle eine Desktop-Verknüpfung zu `D:\hermes\hermes_start.bat`.
+### "WSL" is not recognized
 
----
+→ Run as Administrator:
+```powershell
+wsl --install -d Ubuntu
+```
 
-### Backup-Strategie
+### MySQL fails to start
 
-| Was | Wann | Wohin |
-|-----|------|-------|
-| MySQL-Dump | **Jeder Start** automatisch | `%DUMP_DIR%\hermes_dump.sql` (Standard: `D:\hermes-db-backup\`) |
-| Hermes-Config | Manuell bei Änderung | `%USERPROFILE%\.hermes\` |
-| Docker-Volumes | Manuell (alle paar Monate) | `docker volume backup` |
-
-**Wichtigster Backup-Punkt:** Der MySQL-Dump auf `%DUMP_DIR%` (standardmässig
-`D:\hermes-db-backup\`) enthält dein komplettes Hermes-Gehirn (Sessions, Messages, Memory).
-
----
-
-### Sicherheitshinweise
-
-- **API-Key** und **MySQL-Passwort** sollten nicht in öffentlichen Repos landen
-- Der `hermes-db-backup`-Ordner enthält sensible Chat-Verläufe
-- Exportiere die Batch nur ohne die Passwort-Zeilen, wenn du sie teilst
-- Dein Hermes läuft **komplett lokal** – keine Daten verlassen dein Netzwerk
-- Nur die KI-Anfragen gehen an deinen API-Provider (OpenRouter, Anthropic, etc.)
-
----
-
-## Fehlerbehebung
-
-### "Docker" wird nicht erkannt
-→ Docker Desktop installieren und starten
-
-### "WSL" wird nicht erkannt
-→ `wsl --install -d Ubuntu` in PowerShell als Admin
-
-### MySQL Container startet nicht
 ```powershell
 docker logs hermes-agent-mysql
 ```
 
-### MySQL Sync schlägt fehl
+Common causes:
+- Port 3306 is already in use (another MySQL running)
+- Not enough disk space for the volume
+
+### MySQL sync fails
+
+Run the sync manually:
 ```powershell
-docker exec -e MYSQL_HOST=hermes-agent-mysql -e MYSQL_PASS=DEIN_PASSWORT hermes-agent python3 /opt/data/home/scripts/mysql_sync.py
+docker exec -e MYSQL_HOST=hermes-agent-mysql -e MYSQL_PASS=YOUR_MPASS hermes-agent python3 /opt/data/home/scripts/mysql_sync.py
 ```
 
-### API Server gibt keine Models zurück
-→ Prüfe ob `%USERPROFILE%\.hermes\config.yaml` existiert und `provider`/`model` gesetzt sind
+Check the verbose output for errors.
 
-### Open WebUI zeigt "No model selected"
-→ Oben links in Open WebUI: Modell auswählen (es sollte dein konfiguriertes Modell da sein)
-→ Falls nicht: API Server neustarten: `docker restart hermes-agent`
+### API returns empty model list
+
+- Check that `%USERPROFILE%\.hermes\config.yaml` exists and has `provider` and `model` set
+- Check that your provider's API key is set as a Windows environment variable
+- Restart the API server: `docker restart hermes-agent`
+
+### Open WebUI shows "No model selected"
+
+- Open WebUI → click the model dropdown at the top → select your model
+- If it's not there, restart the API server: `docker restart hermes-agent`
+- If the name doesn't match, check the `MODEL` variable in your batch file
+
+### "hermes: command not found" in Docker build
+
+This happens if pip couldn't install `hermes-agent`. Try:
+```powershell
+docker build --no-cache -t hermes-agent:latest D:\hermes
+```
 
 ---
 
-## Nächste Schritte nach der Installation
+## Post-Installation Checklist
 
-- [ ] Open WebUI mit Kunden-Branding einrichten (Logo, Name über `WEBUI_NAME`)
-- [ ] API-Provider-Key in Umgebungsvariable setzen (z.B. `OPENROUTER_API_KEY`)
-- [ ] Erste Test-Konversation führen – Hermes sollte antworten
-- [ ] Skills für die Branche des Kunden aktivieren
-- [ ] Desktop-Verknüpfung für die Batch erstellen
-- [ ] Wiederherstellungs-Anleitung ausdrucken und ins Handbuch legen
-- [ ] `D:\hermes-db-backup\` extern sichern (USB-Stick, NAS, Cloud)
+- [ ] Open WebUI login works
+- [ ] You can send a message and get a response
+- [ ] MySQL dump exists in `%DUMP_DIR%`
+- [ ] Desktop shortcut created
+- [ ] External backup of dump configured
+- [ ] `RECOVERY.md` printed and filed with system documentation
+
+---
+
+## Next Steps
+
+- Customize Open WebUI with your company logo and colors
+- Enable Hermes skills for your use case (web search, file operations, etc.)
+- Set up automated external backups of `%DUMP_DIR%`
+- Print `RECOVERY.md` and keep it with your system documentation

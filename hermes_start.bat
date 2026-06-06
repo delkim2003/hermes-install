@@ -1,68 +1,69 @@
 @echo off
-title Hermes Agent - Vollstart
+title Hermes Agent - Start All Services
 chcp 65001 >nul
 setlocal enabledelayedexpansion
 
 :: ============================================
-:: KUNDENSPEZIFISCHE KONFIGURATION
+:: CUSTOMER CONFIGURATION
+:: Edit these values before first run
 :: ============================================
-:: Vor dem ersten Start anpassen!
-:: ============================================
-
-set "API_KEY=dein-api-key-hier"       :: Beliebiges Passwort (frei waehlbar)
-set "MPASS=dein-mysql-passwort"       :: MySQL Root-Passwort (frei waehlbar)
-set "PROVIDER=openrouter"             :: KI-Anbieter: openrouter, anthropic, openai, deepseek
-set "MODEL=anthropic/claude-sonnet-4" :: KI-Modell
-set "WEBUI_NAME=Meine Firma - Hermes" :: Anzeigename in Open WebUI
-set "DUMP_DIR=D:\hermes-db-backup"   :: Pfad fuer MySQL-Dump (Backup-Ordner)
-
-:: ============================================
-:: ENDE KONFIGURATION
+set "API_KEY=change-me-to-a-secure-password"  :: Free choice - used for API auth
+set "MPASS=change-me-mysql-password"          :: MySQL root password - free choice
+set "PROVIDER=openrouter"                     :: AI provider: openrouter, anthropic, openai, deepseek, custom
+set "MODEL=anthropic/claude-sonnet-4"         :: AI model name
+set "WEBUI_NAME=My Company - Hermes"          :: Display name in Open WebUI
+set "DUMP_DIR=D:\hermes-db-backup"           :: Directory for MySQL backups
 :: ============================================
 
-:: REPO_ROOT = Pfad in dem diese Batch liegt
+:: Internal variables - do not edit
 set "REPO_ROOT=%~dp0"
-
 set "NAME=hermes-agent"
 set "OWUI=open-webui"
+set "HERMES_API_KEY=%API_KEY%"
 
 echo ======================================
-echo    Hermes Agent - Vollstart
+echo    Hermes Agent - Starting all services
 echo ======================================
 echo.
 
-:: === 1/8  Docker-Netzwerk ===
-echo [1/8] Docker-Netzwerk prüfen...
+:: === 1/8  Docker Network ===
+echo [1/8] Setting up Docker network...
 docker network inspect hermes-net >nul 2>&1 && (
-    echo    Netzwerk existiert bereits.
+    echo    Network 'hermes-net' already exists.
 ) || (
-    docker network create hermes-net >nul && echo    Netzwerk angelegt.
+    docker network create hermes-net >nul && echo    Network 'hermes-net' created.
 )
 echo.
 
-:: === 2/8  Laufwerke konfigurieren ===
-echo [2/8] Zusaetzliche Laufwerke in Container mounten?
+:: === 2/8  Optional drive mounts ===
+echo [2/8] Mount additional folders into containers?
 set "MOUNT_VARS="
-set /p ADD_MOUNT="Pfad eingeben (Enter = keins, z.B. D:\Projekte): "
+set /p ADD_MOUNT="Folder path (Enter = skip, e.g. D:\Projects): "
 if not "!ADD_MOUNT!"=="" (
-    echo    Hinweis: Alle Laufwerke werden unter /mnt/ im Container verfuegbar sein.
+    echo    Mounted folders are available at /mnt/data inside the container.
     set "MOUNT_VARS=-v "!ADD_MOUNT!:/mnt/data""
-    echo    Mount: !ADD_MOUNT! -> /mnt/data
+    echo    Mount: !ADD_MOUNT! -^> /mnt/data
 ) else (
-    echo    Keine zusaetzlichen Laufwerke.
+    echo    No additional mounts configured.
 )
 echo.
 
-:: === 3/8  Hermes-Config erstellen ===
-echo [3/8] Hermes-Config vorbereiten...
+:: === 3/8  Create Hermes config ===
+echo [3/8] Creating Hermes configuration...
 if not exist "%USERPROFILE%\.hermes" mkdir "%USERPROFILE%\.hermes"
 (
-echo # Hermes Agent Config
-echo # Automatisch erstellt am %DATE% %TIME%
+echo # Hermes Agent Configuration
+echo # Auto-generated on %DATE% %TIME%
 echo.
 echo provider: %PROVIDER%
 echo model: %MODEL%
 echo api_key: %API_KEY%
+echo terminal:
+echo   backend: local
+echo api_server:
+echo   enabled: true
+echo   port: 8642
+echo   api_key: %API_KEY%
 echo tools:
 echo   - terminal
 echo   - web_search
@@ -70,11 +71,11 @@ echo   - file
 echo   - browser
 echo   - vision
 ) > "%USERPROFILE%\.hermes\config.yaml"
-echo    Config geschrieben: %USERPROFILE%\.hermes\config.yaml
+echo    Config written: %USERPROFILE%\.hermes\config.yaml
 echo.
 
 :: === 4/8  Dashboard ===
-echo [4/8] Dashboard starten...
+echo [4/8] Starting Hermes Dashboard...
 docker rm -f hermes-dashboard >nul 2>&1
 docker run -d --restart=unless-stopped --network=hermes-net ^
     --name=hermes-dashboard -h hermes-dashboard ^
@@ -86,7 +87,7 @@ docker run -d --restart=unless-stopped --network=hermes-net ^
 echo.
 
 :: === 5/8  API Server ===
-echo [5/8] API Server starten...
+echo [5/8] Starting Hermes API Server...
 docker rm -f %NAME% >nul 2>&1
 docker run -d --restart=unless-stopped --network=hermes-net ^
     --name=%NAME% -h %NAME% ^
@@ -103,20 +104,21 @@ docker run -d --restart=unless-stopped --network=hermes-net ^
 echo.
 
 :: === 6/8  Open WebUI ===
-echo [6/8] Open WebUI starten...
+echo [6/8] Starting Open WebUI...
 docker rm -f %OWUI% >nul 2>&1
 docker run -d --restart=unless-stopped --network=hermes-net ^
     --name=%OWUI% -h %OWUI% ^
     -e OPENAI_API_BASE_URL="http://%NAME%:8642/v1" ^
     -e OPENAI_API_KEY="%API_KEY%" ^
     -e WEBUI_NAME="%WEBUI_NAME%" ^
+    -e WEBUI_SECRET_KEY="%API_KEY%" ^
     -p 3000:8080 ^
     --label "com.centurylinklabs.watchtower.enable=false" ^
     ghcr.io/open-webui/open-webui:main
 echo.
 
 :: === 7/8  MySQL + Sync + Dump ===
-echo [7/8] MySQL Container starten...
+echo [7/8] Starting MySQL and syncing database...
 
 :: MySQL Container
 docker rm -f %NAME%-mysql >nul 2>&1
@@ -128,8 +130,8 @@ docker run -d --restart=unless-stopped --network=hermes-net ^
     mysql:8.0 ^
     --default-authentication-plugin=mysql_native_password
 
-:: Warten bis MySQL bereit
-echo    Warte auf MySQL...
+:: Wait for MySQL to be ready
+echo    Waiting for MySQL to start...
 set tries=0
 :wait_mysql
 timeout /t 3 /nobreak >nul
@@ -139,15 +141,15 @@ if not !errorlevel! equ 0 (
     if !tries! lss 15 goto wait_mysql
 )
 if !tries! lss 15 (
-    echo    MySQL ist bereit.
+    echo    MySQL is ready.
 ) else (
-    echo    Warnung: MySQL nicht rechtzeitig erreichbar.
+    echo    Warning: MySQL not reachable within timeout.
 )
 
-:: Sync-Script in Container kopieren
-echo    Kopiere Sync-Script in den Container...
+:: Copy sync script into container
+echo    Copying sync script into container...
 
-:: Warten bis Container fuer docker cp bereit ist
+:: Wait for container to be ready for docker cp
 set tries=0
 :wait_cp
 docker exec %NAME% mkdir -p /opt/data/home/scripts >nul 2>&1
@@ -157,54 +159,54 @@ if not !errorlevel! equ 0 (
         timeout /t 2 /nobreak >nul
         goto wait_cp
     )
-    echo    Warnung: Container nicht rechtzeitig erreichbar fuer docker cp.
+    echo    Warning: Container not ready for sync copy.
     goto skip_sync
 )
 docker cp "%REPO_ROOT%mysql_sync.py" %NAME%:/opt/data/home/scripts/mysql_sync.py
 
-:: pymysql installieren und syncen
-echo    Installiere pymysql...
+:: Install pymysql and sync
+echo    Installing pymysql...
 docker exec %NAME% pip install pymysql -q 2>nul
-echo    Synchronisiere state.db nach MySQL...
+echo    Syncing state.db to MySQL...
 docker exec ^
     -e MYSQL_HOST=%NAME%-mysql ^
     -e MYSQL_PASS=%MPASS% ^
     -e MYSQL_DB=hermes ^
     %NAME% python3 /opt/data/home/scripts/mysql_sync.py
 
-:: Dump erstellen
-echo    Erstelle MySQL-Dump...
+:: Create SQL dump
+echo    Creating MySQL dump...
 mkdir "%DUMP_DIR%" 2>nul
 docker exec %NAME%-mysql ^
     mysqldump -uroot -p%MPASS% --databases hermes ^
     --routines --triggers --single-transaction > "%DUMP_DIR%\hermes_dump.sql"
-echo    Dump gespeichert: %DUMP_DIR%\hermes_dump.sql
+echo    Dump saved: %DUMP_DIR%\hermes_dump.sql
 echo.
 goto end_sync
 
 :skip_sync
-echo    Sync uebersprungen (Container nicht bereit).
+echo    Sync skipped (container not ready).
 :end_sync
 
-:: === 8/8  Zusammenfassung ===
+:: === 8/8  Summary ===
 echo ======================================
-echo    ALLE DIENSTE GESTARTET
+echo    ALL SERVICES STARTED
 echo ======================================
 echo.
 echo    Hermes API      : http://localhost:8642
 echo    Hermes Dashboard: http://localhost:9119
 echo    Open WebUI      : http://localhost:3000
 echo    MySQL           : %NAME%-mysql:3306
-echo    MySQL-Dump      : %DUMP_DIR%\hermes_dump.sql
+echo    MySQL Dump      : %DUMP_DIR%\hermes_dump.sql
 echo.
-echo    Container:
-docker ps --filter network=hermes-net --format "table {{.Names}}	{{.Status}}	{{.Ports}}"
+echo    Running containers:
+docker ps --filter network=hermes-net --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 echo.
-echo    Zum Anschauen der Logs: docker logs <name>
-echo    Zum Stoppen: docker stop %NAME% %OWUI% hermes-dashboard
+echo    View logs: docker logs <container-name>
+echo    Stop all : docker stop %NAME% %OWUI% hermes-dashboard hermes-agent-mysql
 echo.
 echo    Provider : %PROVIDER%
-echo    Modell   : %MODEL%
-if not "!ADD_MOUNT!"=="" echo    Mounts   : %ADD_MOUNT% -> /mnt/data
+echo    Model    : %MODEL%
+if not "!ADD_MOUNT!"=="" echo    Mounts   : %ADD_MOUNT% -^> /mnt/data
 
 endlocal
