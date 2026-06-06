@@ -1,4 +1,9 @@
 @echo off
+:: ============================================
+:: Hermes Agent Deployment Kit
+:: Copyright (c) 2026 Philipp Schlemmer, einfach-online.dev
+:: Licensed under the Apache License, Version 2.0
+:: ============================================
 title Hermes Agent - Start All Services
 chcp 65001 >nul
 setlocal enabledelayedexpansion
