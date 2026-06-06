@@ -81,8 +81,20 @@ echo   - vision
 echo    Config written: %USERPROFILE%\.hermes\config.yaml
 echo.
 
-:: === 4/7  Dashboard ===
-echo [4/7] Starting Hermes Dashboard...
+:: === 4/8  Build Docker Image ===
+echo [4/8] Building Hermes Docker image...
+cd /d "%~dp0"
+docker build -t hermes-agent:latest .
+if !errorlevel! neq 0 (
+    echo    ERROR: Image build failed!
+    pause
+    exit /b 1
+)
+echo    Image built: hermes-agent:latest
+echo.
+
+:: === 5/8  Dashboard ===
+echo [5/8] Starting Hermes Dashboard...
 docker rm -f hermes-dashboard >nul 2>&1
 docker run -d --restart=unless-stopped --network=hermes-net ^
     --name=hermes-dashboard -h hermes-dashboard ^
@@ -93,8 +105,8 @@ docker run -d --restart=unless-stopped --network=hermes-net ^
     hermes dashboard --host 0.0.0.0 --port 9119
 echo.
 
-:: === 5/7  API Server ===
-echo [5/7] Starting Hermes API Server...
+:: === 6/8  API Server ===
+echo [6/8] Starting Hermes API Server...
 docker rm -f %NAME% >nul 2>&1
 docker run -d --restart=unless-stopped --network=hermes-net ^
     --name=%NAME% -h %NAME% ^
@@ -112,8 +124,8 @@ echo.
 
 
 
-:: === 6/7  MySQL + Sync + Dump ===
-echo [6/7] Starting MySQL and syncing database...
+:: === 7/8  MySQL + Sync + Dump ===
+echo [7/8] Starting MySQL and syncing database...
 
 :: MySQL Container
 docker rm -f %NAME%-mysql >nul 2>&1
@@ -184,7 +196,7 @@ goto end_sync
 echo    Sync skipped (container not ready).
 :end_sync
 
-:: === 7/7  Summary ===
+:: === 8/8  Summary ===
 echo ======================================
 echo    ALL SERVICES STARTED
 echo ======================================
