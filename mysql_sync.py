@@ -21,6 +21,7 @@ MYSQL_USER = os.environ.get("MYSQL_USER", "root")
 MYSQL_PASS = os.environ.get("MYSQL_PASS", "hermes_root_2024")
 MYSQL_DB = os.environ.get("MYSQL_DB", "hermes")
 DRY_RUN = os.environ.get("DRY_RUN", "").lower() in ("1", "true", "yes")
+SYNC_DIRECTION = os.environ.get("SYNC_DIRECTION", "forward").lower()
 
 
 def log(msg: str):
@@ -154,6 +155,44 @@ def sync_messages(sqlite_conn, mysql_cursor):
     return count
 
 
+def sync_reverse(mysql_cursor, sqlite_cursor):
+    """Reverse: MySQL -> SQLite - stellt state.db aus MySQL wieder her"""
+    log("Reverse-Sync: MySQL -> SQLite fuer Wiederherstellung")
+
+    # Sessions wiederherstellen
+    mysql_cursor.execute("""
+        SELECT session_id, title, source, started_at, ended_at,
+               COALESCE(message_count, 0), COALESCE(profile, 'default')
+        FROM sessions ORDER BY started_at
+    """)
+    rows = mysql_cursor.fetchall()
+    count = 0
+    for r in rows:
+        sqlite_cursor.execute("""
+            INSERT OR REPLACE INTO sessions
+                (id, title, source, started_at, ended_at, message_count, profile)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (r[0], r[1], r[2], r[3], r[4], r[5], r[6]))
+        count += 1
+    log(f"  {count} Sessions wiederhergestellt")
+
+    # Messages wiederherstellen
+    mysql_cursor.execute(
+        "SELECT id, session_id, role, content, created_at FROM messages ORDER BY id"
+    )
+    rows = mysql_cursor.fetchall()
+    count = 0
+    for r in rows:
+        sqlite_cursor.execute("""
+            INSERT OR REPLACE INTO messages (id, session_id, role, content, created_at)
+            VALUES (?, ?, ?, ?, ?)
+        """, r)
+        count += 1
+    log(f"  {count} Messages wiederhergestellt")
+
+    return len(rows)
+
+
 def sync_memory(sqlite_conn, mysql_cursor):
     mem_dir = os.path.expanduser("~/.hermes/memories")
     if not os.path.isdir(mem_dir):
@@ -214,43 +253,59 @@ def main():
         sqlite_conn.close()
         sys.exit(2)
 
-    mysql_cursor = mysql_conn.cursor()
+    cursor = mysql_conn.cursor()
     try:
-        ensure_mysql_database(mysql_cursor)
+        ensure_mysql_database(cursor)
         mysql_conn.database = MYSQL_DB
-        ensure_mysql_tables(mysql_cursor)
 
-        if DRY_RUN:
-            log("  *** DRY RUN - keine Aenderungen ***")
+        if SYNC_DIRECTION in ("reverse", "backward"):
+            # === REVERSE: MySQL -> SQLite (Wiederherstellung) ===
+            ensure_mysql_tables(cursor)
+            log("Modus: REVERSE - MySQL -> SQLite")
+            if DRY_RUN:
+                log("  *** DRY RUN - keine Aenderungen ***")
 
-        log("Synchronisiere Sessions...")
-        sessions_count = sync_sessions(sqlite_conn, mysql_cursor)
-        log(f"  {sessions_count} Sessions verarbeitet")
+            reverse_sessions = sync_reverse(cursor, sqlite_conn.cursor())
+            log(f"  Reverse-Sync abgeschlossen: {reverse_sessions} Sessions")
 
-        log("Synchronisiere Messages...")
-        messages_count = sync_messages(sqlite_conn, mysql_cursor)
-        log(f"  {messages_count} Messages verarbeitet")
+            if not DRY_RUN:
+                sqlite_conn.commit()
+                log("  SQLite-Commit erfolgreich")
+                log(f"  Fertig: state.db wiederhergestellt aus MySQL")
 
-        log("Synchronisiere Memory...")
-        memory_count = sync_memory(sqlite_conn, mysql_cursor)
-        log(f"  {memory_count} Memory-Eintraege verarbeitet")
+        else:
+            # === FORWARD: SQLite -> MySQL (Normalbetrieb) ===
+            ensure_mysql_tables(cursor)
+            if DRY_RUN:
+                log("  *** DRY RUN - keine Aenderungen ***")
 
-        if not DRY_RUN:
-            mysql_cursor.execute("""
-                INSERT INTO sync_log (started_at, finished_at, sessions_synced,
-                                      messages_synced, memory_synced, status)
-                VALUES (NOW(), NOW(), %s, %s, %s, 'ok')
-            """, (sessions_count, messages_count, memory_count))
+            log("Synchronisiere Sessions...")
+            sessions_count = sync_sessions(sqlite_conn, cursor)
+            log(f"  {sessions_count} Sessions verarbeitet")
 
-        mysql_conn.commit()
-        log("  MySQL-Commit erfolgreich")
-        log(f"  Fertig: {sessions_count} Sessions, {messages_count} Messages, {memory_count} Memory")
+            log("Synchronisiere Messages...")
+            messages_count = sync_messages(sqlite_conn, cursor)
+            log(f"  {messages_count} Messages verarbeitet")
+
+            log("Synchronisiere Memory...")
+            memory_count = sync_memory(sqlite_conn, cursor)
+            log(f"  {memory_count} Memory-Eintraege verarbeitet")
+
+            if not DRY_RUN:
+                cursor.execute("""
+                    INSERT INTO sync_log (started_at, finished_at, sessions_synced,
+                                          messages_synced, memory_synced, status)
+                    VALUES (NOW(), NOW(), %s, %s, %s, 'ok')
+                """, (sessions_count, messages_count, memory_count))
+                mysql_conn.commit()
+                log("  MySQL-Commit erfolgreich")
+                log(f"  Fertig: {sessions_count} Sessions, {messages_count} Messages, {memory_count} Memory")
 
     except Exception as e:
         log(f"  FEHLER: {e}")
         mysql_conn.rollback()
         try:
-            mysql_cursor.execute("""
+            cursor.execute("""
                 INSERT INTO sync_log (started_at, finished_at, status, error_message)
                 VALUES (NOW(), NOW(), 'error', %s)
             """, (str(e),))
@@ -259,7 +314,7 @@ def main():
             pass
         sys.exit(3)
     finally:
-        mysql_cursor.close()
+        cursor.close()
         mysql_conn.close()
         sqlite_conn.close()
 

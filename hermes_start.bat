@@ -14,6 +14,7 @@ set "MPASS=dein-mysql-passwort"       :: MySQL Root-Passwort (frei waehlbar)
 set "PROVIDER=openrouter"             :: KI-Anbieter: openrouter, anthropic, openai, deepseek
 set "MODEL=anthropic/claude-sonnet-4" :: KI-Modell
 set "WEBUI_NAME=Meine Firma - Hermes" :: Anzeigename in Open WebUI
+set "DUMP_DIR=D:\hermes-db-backup"   :: Pfad fuer MySQL-Dump (Backup-Ordner)
 
 :: ============================================
 :: ENDE KONFIGURATION
@@ -145,7 +146,20 @@ if !tries! lss 15 (
 
 :: Sync-Script in Container kopieren
 echo    Kopiere Sync-Script in den Container...
-docker exec %NAME% mkdir -p /opt/data/home/scripts
+
+:: Warten bis Container fuer docker cp bereit ist
+set tries=0
+:wait_cp
+docker exec %NAME% mkdir -p /opt/data/home/scripts >nul 2>&1
+if not !errorlevel! equ 0 (
+    set /a tries+=1
+    if !tries! lss 15 (
+        timeout /t 2 /nobreak >nul
+        goto wait_cp
+    )
+    echo    Warnung: Container nicht rechtzeitig erreichbar fuer docker cp.
+    goto skip_sync
+)
 docker cp "%REPO_ROOT%mysql_sync.py" %NAME%:/opt/data/home/scripts/mysql_sync.py
 
 :: pymysql installieren und syncen
@@ -160,12 +174,17 @@ docker exec ^
 
 :: Dump erstellen
 echo    Erstelle MySQL-Dump...
-mkdir "D:\hermes-db-backup" 2>nul
+mkdir "%DUMP_DIR%" 2>nul
 docker exec %NAME%-mysql ^
     mysqldump -uroot -p%MPASS% --databases hermes ^
-    --routines --triggers --single-transaction > "D:\hermes-db-backup\hermes_dump.sql"
-echo    Dump gespeichert: D:\hermes-db-backup\hermes_dump.sql
+    --routines --triggers --single-transaction > "%DUMP_DIR%\hermes_dump.sql"
+echo    Dump gespeichert: %DUMP_DIR%\hermes_dump.sql
 echo.
+goto end_sync
+
+:skip_sync
+echo    Sync uebersprungen (Container nicht bereit).
+:end_sync
 
 :: === 8/8  Zusammenfassung ===
 echo ======================================
@@ -176,7 +195,7 @@ echo    Hermes API      : http://localhost:8642
 echo    Hermes Dashboard: http://localhost:9119
 echo    Open WebUI      : http://localhost:3000
 echo    MySQL           : %NAME%-mysql:3306
-echo    MySQL-Dump      : D:\hermes-db-backup\hermes_dump.sql
+echo    MySQL-Dump      : %DUMP_DIR%\hermes_dump.sql
 echo.
 echo    Container:
 docker ps --filter network=hermes-net --format "table {{.Names}}	{{.Status}}	{{.Ports}}"

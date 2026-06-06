@@ -164,20 +164,13 @@ cd D:\hermes
 
 **Dauer: ~10-20 Minuten (abhängig von Internetgeschwindigkeit)**
 
-```bash
-wsl cd /mnt/d/hermes && docker build -t hermes-agent:latest .
-```
+```powershell
+:: Vom geklonten Repo aus (wenn Dockerfile vorhanden)
+docker build -t hermes-agent:latest D:\hermes
 
-Ausgabe sollte am Ende zeigen:
-```
-=> => naming to docker.io/library/hermes-agent:latest
-```
-
-**Falls kein Dockerfile im Repo ist** (weil Hermes Agent aktualisiert wurde):
-
-```bash
-wsl git clone https://github.com/nousresearch/hermes-agent.git /tmp/hermes
-wsl docker build -t hermes-agent:latest /tmp/hermes
+:: Oder falls das Repo kein Dockerfile enthält:
+git clone https://github.com/nousresearch/hermes-agent.git C:\temp\hermes-agent
+docker build -t hermes-agent:latest C:\temp\hermes-agent
 ```
 
 ---
@@ -207,6 +200,7 @@ set "WEBUI_NAME=Meine Firma - Hermes"   :: Open WebUI Titel
 | `PROVIDER` | ✅ | Dein KI-Anbieter: `openrouter`, `anthropic`, `openai`, `deepseek` oder `custom`. |
 | `MODEL` | ✅ | Das KI-Modell, z.B. `anthropic/claude-sonnet-4`, `gpt-4o` oder `deepseek-v4-flash`. |
 | `WEBUI_NAME` | ❌ | Anzeigename in Open WebUI (oben links in der Leiste). |
+| `DUMP_DIR` | ❌ | Pfad für MySQL-Dump-Backup. Standard: `D:\hermes-db-backup`. |
 
 **Mehrere Konfigurationen:** Lege einfach mehrere Batch-Dateien an:
 - `hermes_kunde1_start.bat`
@@ -408,13 +402,12 @@ Sollte eine `hermes_dump.sql` enthalten.
 
 | Was | Wann | Wohin |
 |-----|------|-------|
-| MySQL-Dump | **Jeder Start** automatisch | `D:\hermes-db-backup\hermes_dump.sql` |
+| MySQL-Dump | **Jeder Start** automatisch | `%DUMP_DIR%\hermes_dump.sql` (Standard: `D:\hermes-db-backup\`) |
 | Hermes-Config | Manuell bei Änderung | `%USERPROFILE%\.hermes\` |
 | Docker-Volumes | Manuell (alle paar Monate) | `docker volume backup` |
 
-**Wichtigster Backup-Punkt:** Der MySQL-Dump auf `D:\hermes-db-backup\` enthält
-dein komplettes Hermes-Gehirn (Sessions, Messages, Memory). Ohne diesen Dump
-gibt es nach einem Totalausfall keine Wiederherstellung der Chats.
+**Wichtigster Backup-Punkt:** Der MySQL-Dump auf `%DUMP_DIR%` (standardmässig
+`D:\hermes-db-backup\`) enthält dein komplettes Hermes-Gehirn (Sessions, Messages, Memory).
 
 ---
 
