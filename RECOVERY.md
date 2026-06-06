@@ -105,7 +105,15 @@ docker build -t hermes-agent:latest .
 
 ## Step 4: Restore MySQL
 
-### 4A: Start MySQL Container
+### 4A: Clean Old Volume
+
+Remove any old MySQL volume first — a corrupted or partial volume can block the import:
+
+```powershell
+docker volume rm hermes_mysql_data 2>nul
+```
+
+### 4B: Start MySQL Container
 
 ```powershell
 docker network create hermes-net 2>nul
@@ -126,7 +134,7 @@ if %errorlevel% neq 0 (timeout /t 3 /nobreak >nul & goto wait_loop)
 echo MySQL is ready
 ```
 
-### 4B: Import the Dump
+### 4C: Import the Dump
 
 ```powershell
 type <REPO_DIR>\hermes_dump.sql | docker exec -i hermes-agent-mysql mysql -uroot -pYOUR_MPASS
@@ -290,6 +298,9 @@ Run `<REPO_DIR>\hermes_start.bat` once to create a fresh backup.
 **One-liner recovery** (run from `<REPO_DIR>` after prerequisites are done):
 
 ```powershell
+:: 0. Clean old MySQL volume
+docker volume rm hermes_mysql_data 2>nul
+
 :: 1. Start MySQL and import
 docker run -d --restart=unless-stopped --network=hermes-net --name=hermes-agent-mysql -h hermes-agent-mysql -e MYSQL_ROOT_PASSWORD=YOUR_MPASS -v hermes_mysql_data:/var/lib/mysql mysql:8.0 --default-authentication-plugin=mysql_native_password
 timeout /t 30 /nobreak >nul
