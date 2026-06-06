@@ -15,7 +15,8 @@ Please provide a clear and concise description of the changes.
 Please describe the tests you ran to verify your changes:
 - [ ] Tested `hermes_start.bat` on a clean Windows machine
 - [ ] All Docker containers start successfully
-- [ ] No Open WebUI / removed services remain
+- [ ] All services start without errors
+- [ ] No orphaned references to removed components
 
 ## Checklist:
 
